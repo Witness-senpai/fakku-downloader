@@ -11,6 +11,7 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
 
 from bs4 import BeautifulSoup as bs
+from tqdm import tqdm
 
 URL = 'https://www.fakku.net/hentai/just-a-moment-english'
 # Initial display settings for headless browser. Any manga in this
@@ -58,28 +59,20 @@ class FDownloader():
 
 
     def load_all(self):
-        try:
+        if not os.path.exists(ROOT_MANGA_DIR):
             os.mkdir(ROOT_MANGA_DIR)
-        except FileExistsError:
-            print(f'Folder {ROOT_MANGA_DIR} are already exist and will be overwriten, continue?(y/n)')
-            response = input('>> ')
-            if 'y' in response: 
-                rmtree(ROOT_MANGA_DIR)
-                os.mkdir(ROOT_MANGA_DIR)
-            else:
-                program_exit()
         for url in self.urls:
             manga_name = url.split('/')[-1]
             manga_folder = f'{ROOT_MANGA_DIR}\\{manga_name}'
-            os.mkdir(manga_folder)
+            if not os.path.exists(manga_folder):
+               os.mkdir(manga_folder)
             self.browser.get(url)
             self.waiting_loading_page(is_main_page=True)
             page_count = self.__get_page_count(self.browser.page_source)
             print(f'Detect "{manga_name}" manga.')
             self.browser.save_screenshot('kok.png')
-            for page_num in range(1, page_count + 1):
+            for page_num in tqdm(range(1, page_count + 1)):
                 self.browser.get(f'{url}/read/page/{page_num}')
-                #sleep(1)
                 self.waiting_loading_page(is_main_page=False)
 
                 # Resizing window size for exactly manga page size
@@ -90,7 +83,7 @@ class FDownloader():
                 # Delete all UI
                 self.browser.execute_script("document.getElementsByClassName('layer')[2].remove()")
                 self.browser.save_screenshot(f'{manga_folder}\\{page_num}.png')
-                print(f'{page_num}/{page_count}: page done')
+                #print(f'{page_num}/{page_count}: page done')
             print('manga done!')
 
 
@@ -137,7 +130,7 @@ class FDownloader():
         if is_main_page:
             elem_xpath = "//link[@type='image/x-icon']"
         else:
-            sleep(0.8)
+            sleep(1)
             elem_xpath = "//div[@data-name='PageView']"
         try:
             element = EC.presence_of_element_located((By.XPATH, elem_xpath))
