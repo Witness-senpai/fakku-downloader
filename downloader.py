@@ -5,22 +5,30 @@ from time import sleep
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import TimeoutException
+
 from bs4 import BeautifulSoup as bs
 
 URL = 'https://www.fakku.net/hentai/just-a-moment-english'
-# Initial display settings for phantomjs browser. Any manga in this
+# Initial display settings for headless browser. Any manga in this
 # resolution will be opened correctly and with the best quality.
 MAX_DISPLAY_SETTINGS = [1440, 2560]
-# Path to phantomjs.exe
+# Path to headless driver
 EXEC_PATH = 'chromedriver.exe'
 # Root directory for manga downloader
 ROOT_MANGA_DIR = 'manga'
-
+# Timeout to page loading in seconds
+TIMEOUT = 15
+ 
 
 def program_exit():
     print('Program exit.')
     exit()
 
+By.CSS_SELECTOR
 
 class FDownloader():
     """
@@ -39,7 +47,8 @@ class FDownloader():
         self.urls = self.__get_urls_list(urls_file)
         options = Options()
         options.headless = True
-        self.browser = webdriver.Chrome(executable_path=driver_path,
+        self.browser = webdriver.Chrome(
+            executable_path=driver_path,
             chrome_options=options)
         self.browser.set_window_size(*default_display)
 
@@ -58,22 +67,26 @@ class FDownloader():
                 rmtree(ROOT_MANGA_DIR)
                 os.mkdir(ROOT_MANGA_DIR)
             else:
-                print('Program exit.')
-                exit()
+                program_exit()
         for url in self.urls:
             manga_name = url.split('/')[-1]
-            manga_folder = ROOT_MANGA_DIR + '\\' + manga_name
+            manga_folder = f'{ROOT_MANGA_DIR}\\{manga_name}'
             os.mkdir(manga_folder)
             self.browser.get(url)
-            sleep(4)
+            self.waiting_loading_page(is_main_page=True)
             page_count = self.__get_page_count(self.browser.page_source)
             print(f'Detect "{manga_name}" manga.')
+            self.browser.save_screenshot('kok.png')
             for page_num in range(1, page_count + 1):
                 self.browser.get(f'{url}/read/page/{page_num}')
-                sleep(1)
+                #sleep(1)
+                self.waiting_loading_page(is_main_page=False)
+
+                # Resizing window size for exactly manga page size
                 width = self.browser.execute_script("return document.getElementsByTagName('canvas')[1].width")
                 height = self.browser.execute_script("return document.getElementsByTagName('canvas')[1].height")
                 self.browser.set_window_size(width, height)
+
                 # Delete all UI
                 self.browser.execute_script("document.getElementsByClassName('layer')[2].remove()")
                 self.browser.save_screenshot(f'{manga_folder}\\{page_num}.png')
@@ -114,7 +127,25 @@ class FDownloader():
         return urls        
 
 
-    def __page_is_ready(self):
-        pass
+    def waiting_loading_page(self, is_main_page=True):
+        """
+        Awaiting while page will load
+        param: is_main_page -- bool
+            False -- awaiting of main manga page
+            True -- awaiting of others manga pages
+        """
+        if is_main_page:
+            elem_xpath = "//link[@type='image/x-icon']"
+        else:
+            sleep(0.8)
+            elem_xpath = "//div[@data-name='PageView']"
+        try:
+            element = EC.presence_of_element_located((By.XPATH, elem_xpath))
+            WebDriverWait(self.browser, TIMEOUT).until(element)
+        except TimeoutException:
+            print('Error: timed out waiting for page to load.')
+            program_exit()
+
+            self.browser.execute_script("return document.readyState")
 
 
