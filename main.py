@@ -28,7 +28,7 @@ def main():
     if args.login is None or args.password is None:
         print('Error: login and password via keys [-l] and [-p] are necessary for download.')
         program_exit()
-    if args.input_type == 'file':
+    else:
         try:
             with open(args.file_urls, 'r') as f:
                 pass
