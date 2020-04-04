@@ -1,29 +1,16 @@
 import argparse
-from downloader import FDownloader
+from downloader import FDownloader, program_exit
+
 
 def main():
     argparser = argparse.ArgumentParser()
-    argparser.add_argument(
-        "-i",
-        "--input_type",
-        type=str,
-        default='file',
-        help="Type of urls input. From .txt file (write <file>) or ' + \
-            via console argument (write <console>). By default -- file")
     argparser.add_argument(
         "-f",
         "--file_urls",
         type=str,
         default='urls.txt',
         help=".txt file that contains list of urls for download if ' + \
-            key [--input_type] == file. By default -- urls.txt")
-    argparser.add_argument(
-        "-u",
-        "--urls_list",
-        type=str,
-        default=None,
-        help="List of urls for download if key [--input_type] == console. ' + \
-            By default - None.")    
+            key [--input_type] == file. By default -- urls.txt")   
     argparser.add_argument(
         "-l",
         "--login",
@@ -39,9 +26,19 @@ def main():
     args = argparser.parse_args()
 
     if args.login is None or args.password is None:
-        print('Error: login and password via keys [-l] and [-i] are necessary for download.')
-    if args.input_type == 'console' and args.urls_list is None:
-        print('Error: you must write urls with key [-f] if you are using [-i] == <console>')
+        print('Error: login and password via keys [-l] and [-p] are necessary for download.')
+        program_exit()
+    if args.input_type == 'file':
+        try:
+            with open(args.file_urls, 'r') as f:
+                pass
+        except IOError:
+            print(f'File {args.file_urls} are not exist in folder. \n' + \
+                'Create him and write into list of manga, or for set urls \n' + \
+                'and downloading via console use key [--input_type]')
+            program_exit()
+    loader = FDownloader(args.file_urls)
+    loader.load_all()
 
 if __name__ == '__main__':
     main()
