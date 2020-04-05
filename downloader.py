@@ -50,7 +50,7 @@ class FDownloader():
             Path to the headless driver
         param: default_display -- list of two int (width, height)    
             Initial display settings. After loading the page, they will be changed
-        param: timeout -- int
+        param: timeout -- float
             Timeout in seconds beetween pages downloading. 
             If <1 may be poor quality.
         """

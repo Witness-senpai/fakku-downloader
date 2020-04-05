@@ -26,7 +26,7 @@ def main():
     argparser.add_argument(
         "-t",
         "--timeout",
-        type=int,
+        type=float,
         default=1,
         help="Timeout in seconds for pauses beetween downloading pages " + \
             'Increase this argument if quality of pages is bad. By default -- 1 sec')
