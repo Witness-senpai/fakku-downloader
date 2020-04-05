@@ -13,7 +13,7 @@ from selenium.common.exceptions import TimeoutException
 from bs4 import BeautifulSoup as bs
 from tqdm import tqdm
 
-URL = 'https://www.fakku.net/hentai/just-a-moment-english'
+
 # Initial display settings for headless browser. Any manga in this
 # resolution will be opened correctly and with the best quality.
 MAX_DISPLAY_SETTINGS = [1440, 2560]
