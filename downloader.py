@@ -22,7 +22,7 @@ EXEC_PATH = 'chromedriver.exe'
 # Root directory for manga downloader
 ROOT_MANGA_DIR = 'manga'
 # Timeout to page loading in seconds
-TIMEOUT = 15
+TIMEOUT = 1
  
 
 def program_exit():
@@ -38,12 +38,21 @@ class FDownloader():
     screenshot from that. Because canvas in fakku.net is protected
     from download via simple .toDataURL js function etc.
     """
-    def __init__(self, urls_file, driver_path=EXEC_PATH, default_display=MAX_DISPLAY_SETTINGS):
+    def __init__(self,
+        urls_file, 
+        driver_path=EXEC_PATH, 
+        default_display=MAX_DISPLAY_SETTINGS,
+        timeoot=TIMEOUT):
         """
-        param: urls -- list of string 
-            List of manga urls, that's to be downloaded
-        param: exec_path -- string
+        param: urls_file -- string name of .txt file with urls 
+            Contains list of manga urls, that's to be downloaded
+        param: driver_path -- string
             Path to the headless driver
+        param: default_display -- list of two int (width, height)    
+            Initial display settings. After loading the page, they will be changed
+        param: timeout -- int
+            Timeout in seconds beetween pages downloading. 
+            If <1 may be poor quality.
         """
         self.urls = self.__get_urls_list(urls_file)
         options = Options()
@@ -52,6 +61,7 @@ class FDownloader():
             executable_path=driver_path,
             chrome_options=options)
         self.browser.set_window_size(*default_display)
+        self.timeout = timeoot
 
 
     def auth(self, login, password):
@@ -59,6 +69,9 @@ class FDownloader():
 
 
     def load_all(self):
+        """
+        Just main function witch opening each page and save it in .png
+        """
         if not os.path.exists(ROOT_MANGA_DIR):
             os.mkdir(ROOT_MANGA_DIR)
         for url in self.urls:
@@ -69,8 +82,7 @@ class FDownloader():
             self.browser.get(url)
             self.waiting_loading_page(is_main_page=True)
             page_count = self.__get_page_count(self.browser.page_source)
-            print(f'Detect "{manga_name}" manga.')
-            self.browser.save_screenshot('kok.png')
+            print(f'Downloading "{manga_name}" manga.')
             for page_num in tqdm(range(1, page_count + 1)):
                 self.browser.get(f'{url}/read/page/{page_num}')
                 self.waiting_loading_page(is_main_page=False)
@@ -83,8 +95,7 @@ class FDownloader():
                 # Delete all UI
                 self.browser.execute_script("document.getElementsByClassName('layer')[2].remove()")
                 self.browser.save_screenshot(f'{manga_folder}\\{page_num}.png')
-                #print(f'{page_num}/{page_count}: page done')
-            print('manga done!')
+            print('>> manga done!')
 
 
     def __get_page_count(self, page_source):
@@ -96,7 +107,7 @@ class FDownloader():
         """
         soup = bs(page_source, 'html.parser')
         page_count = None
-        while not page_count:
+        if not page_count:
             try:
                 page_count = int(soup.find_all('div', attrs={'class': 'row'})[5]
                     .find('div', attrs={'class': 'row-right'}).text
@@ -108,6 +119,7 @@ class FDownloader():
 
     def __get_urls_list(self, urls_file):
         """
+        Get list of urls from .txt file
         param: urls_file -- string
             Name or path of .txt file with manga urls
         return: urls -- list
@@ -130,7 +142,7 @@ class FDownloader():
         if is_main_page:
             elem_xpath = "//link[@type='image/x-icon']"
         else:
-            sleep(1)
+            sleep(self.timeout)
             elem_xpath = "//div[@data-name='PageView']"
         try:
             element = EC.presence_of_element_located((By.XPATH, elem_xpath))
@@ -138,7 +150,5 @@ class FDownloader():
         except TimeoutException:
             print('Error: timed out waiting for page to load.')
             program_exit()
-
-            self.browser.execute_script("return document.readyState")
 
 

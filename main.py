@@ -23,6 +23,13 @@ def main():
         type=str,
         default=None,
         help="Password for authentication")
+    argparser.add_argument(
+        "-t",
+        "--timeout",
+        type=int,
+        default=1,
+        help="Timeout in seconds for pauses beetween downloading pages " + \
+            'Increase this argument if quality of pages is bad. By default -- 1 sec')
     args = argparser.parse_args()
 
     if args.login is None or args.password is None:
@@ -37,7 +44,7 @@ def main():
                 'Create him and write into list of manga, or for set urls \n' + \
                 'and downloading via console use key [--input_type]')
             program_exit()
-    loader = FDownloader(args.file_urls)
+    loader = FDownloader(args.file_urls, timeoot=args.timeout)
     loader.load_all()
 
 if __name__ == '__main__':
