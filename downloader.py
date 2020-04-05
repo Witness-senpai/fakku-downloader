@@ -1,4 +1,5 @@
 import os
+import pickle
 
 from shutil import rmtree
 from time import sleep
@@ -13,12 +14,16 @@ from selenium.common.exceptions import TimeoutException
 from bs4 import BeautifulSoup as bs
 from tqdm import tqdm
 
-
+LOGIN_URL = 'http://www.fakku.net/login/'
 # Initial display settings for headless browser. Any manga in this
 # resolution will be opened correctly and with the best quality.
 MAX_DISPLAY_SETTINGS = [1440, 2560]
 # Path to headless driver
 EXEC_PATH = 'chromedriver.exe'
+# File with manga urls
+URLS_FILE = 'urls.txt'
+# File with prepared coockies
+COOCKIES_FILE = 'cookies.pickle'
 # Root directory for manga downloader
 ROOT_MANGA_DIR = 'manga'
 # Timeout to page loading in seconds
@@ -39,10 +44,14 @@ class FDownloader():
     from download via simple .toDataURL js function etc.
     """
     def __init__(self,
-        urls_file, 
-        driver_path=EXEC_PATH, 
-        default_display=MAX_DISPLAY_SETTINGS,
-        timeoot=TIMEOUT):
+            urls_file=URLS_FILE, 
+            driver_path=EXEC_PATH, 
+            default_display=MAX_DISPLAY_SETTINGS,
+            timeout=TIMEOUT,
+            login=None,
+            password=None,
+            isheadless=True,
+        ):
         """
         param: urls_file -- string name of .txt file with urls 
             Contains list of manga urls, that's to be downloaded
@@ -53,19 +62,58 @@ class FDownloader():
         param: timeout -- float
             Timeout in seconds beetween pages downloading. 
             If <1 may be poor quality.
+        param: login -- string
+            Login or email for authentication
+        param: password -- string
+            Password for authentication
         """
         self.urls = self.__get_urls_list(urls_file)
+        self.driver_path = driver_path
+        options = Options()
+        options.headless = isheadless
+        self.browser = webdriver.Chrome(
+            executable_path=self.driver_path,
+            chrome_options=options)
+        self.browser.set_window_size(*default_display)
+        self.timeout = timeout
+        self.login = login
+        self.password = password
+
+
+    def __set_headless_browser(self):
         options = Options()
         options.headless = True
         self.browser = webdriver.Chrome(
-            executable_path=driver_path,
+            executable_path=self.driver_path,
             chrome_options=options)
-        self.browser.set_window_size(*default_display)
-        self.timeout = timeoot
+        
+        self.browser.get(LOGIN_URL)
+
+        self.browser.delete_all_cookies()
+        with open(COOCKIES_FILE, 'rb') as f:
+            cookies = pickle.load(f)
+            for cookie in cookies:
+                if 'expiry' in cookie:
+                    cookie['expiry'] = int(cookie['expiry'])
+                    self.browser.add_cookie(cookie)
+        
+        self.browser.get(LOGIN_URL)
 
 
-    def auth(self, login, password):
-        pass
+    def auth(self):
+        self.browser.get(LOGIN_URL)
+        if not self.login is None:
+            self.browser.find_element_by_id('username').send_keys(self.login)
+        if not self.password is None:
+            self.browser.find_element_by_id('password').send_keys(self.password)
+        self.browser.find_element_by_class_name('js-submit').click()
+
+        ready = input("Tab Enter to continue after you login...")
+        with open('cookies.txt', 'wb') as f:
+            pickle.dump(self.browser.get_cookies(), f)
+        
+        self.browser.close()
+        self.__set_headless_browser()
 
 
     def load_all(self):

@@ -1,5 +1,10 @@
 import argparse
-from downloader import FDownloader, program_exit
+from downloader import (FDownloader,
+                        program_exit,
+                        TIMEOUT,
+                        URLS_FILE,
+                        COOCKIES_FILE,
+                    )
 
 
 def main():
@@ -8,9 +13,16 @@ def main():
         "-f",
         "--file_urls",
         type=str,
-        default='urls.txt',
-        help=".txt file that contains list of urls for download if ' + \
-            key [--input_type] == file. By default -- urls.txt")   
+        default=URLS_FILE,
+        help=f".txt file that contains list of urls for download if + \
+            key [--input_type] == file. By default -- {URLS_FILE}")
+    argparser.add_argument(
+        "-c",
+        "--coockies_file",
+        type=str,
+        default=COOCKIES_FILE,
+        help=f"Bynary file that contains saved cookies for auth + \
+            By default -- {COOCKIES_FILE}")  
     argparser.add_argument(
         "-l",
         "--login",
@@ -27,24 +39,28 @@ def main():
         "-t",
         "--timeout",
         type=float,
-        default=1,
-        help="Timeout in seconds for pauses beetween downloading pages " + \
-            'Increase this argument if quality of pages is bad. By default -- 1 sec')
+        default=TIMEOUT,
+        help=f"Timeout in seconds for pauses beetween downloading pages + \
+            Increase this argument if quality of pages is bad. By default -- {TIMEOUT} sec")
     args = argparser.parse_args()
 
     if args.login is None or args.password is None:
-        print('Error: login and password via keys [-l] and [-p] are necessary for download.')
+        isheadless = True
+    try:
+        with open(args.file_urls, 'r') as f:
+            pass
+    except IOError:
+        print(f'File {args.file_urls} are not exist in folder. \n + \
+            Create him and write into list of manga, or for set urls \n + \
+            and downloading via console use key [--input_type]')
         program_exit()
-    else:
-        try:
-            with open(args.file_urls, 'r') as f:
-                pass
-        except IOError:
-            print(f'File {args.file_urls} are not exist in folder. \n' + \
-                'Create him and write into list of manga, or for set urls \n' + \
-                'and downloading via console use key [--input_type]')
-            program_exit()
-    loader = FDownloader(args.file_urls, timeoot=args.timeout)
+    loader = FDownloader(urls_file=args.file_urls, 
+                        login=args.login,
+                        password=args.password,
+                        timeout=args.timeout,
+                        isheadless=isheadless,
+                    )
+    #loader.auth()
     loader.load_all()
 
 if __name__ == '__main__':
