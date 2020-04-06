@@ -3,7 +3,7 @@ from downloader import (FDownloader,
                         program_exit,
                         TIMEOUT,
                         URLS_FILE,
-                        COOCKIES_FILE,
+                        COOKIES_FILE,
                     )
 
 
@@ -14,15 +14,22 @@ def main():
         "--file_urls",
         type=str,
         default=URLS_FILE,
-        help=f".txt file that contains list of urls for download if + \
+        help=f".txt file that contains list of urls for download if \
             key [--input_type] == file. By default -- {URLS_FILE}")
     argparser.add_argument(
         "-c",
-        "--coockies_file",
+        "--cookies_file",
         type=str,
-        default=COOCKIES_FILE,
-        help=f"Bynary file that contains saved cookies for auth + \
-            By default -- {COOCKIES_FILE}")  
+        default=COOKIES_FILE,
+        help=f"Bynary file that contains saved cookies for authentication. \
+            By default -- {COOKIES_FILE}")
+    argparser.add_argument(
+        "-hl",
+        "--headless",
+        type=bool,
+        default=True,
+        help=f"Mode of working browser driver \
+            By default -- True")          
     argparser.add_argument(
         "-l",
         "--login",
@@ -40,27 +47,33 @@ def main():
         "--timeout",
         type=float,
         default=TIMEOUT,
-        help=f"Timeout in seconds for pauses beetween downloading pages + \
+        help=f"Timeout in seconds for pauses beetween downloading pages \
             Increase this argument if quality of pages is bad. By default -- {TIMEOUT} sec")
     args = argparser.parse_args()
 
-    if args.login is None or args.password is None:
-        isheadless = True
     try:
         with open(args.file_urls, 'r') as f:
             pass
-    except IOError:
-        print(f'File {args.file_urls} are not exist in folder. \n + \
-            Create him and write into list of manga, or for set urls \n + \
+    except FileNotFoundError:
+
+        print(f'File {args.file_urls} are not exist in folder. \n  \
+            Create him and write into list of manga, or for set urls \n  \
             and downloading via console use key [--input_type]')
         program_exit()
     loader = FDownloader(urls_file=args.file_urls, 
                         login=args.login,
                         password=args.password,
                         timeout=args.timeout,
-                        isheadless=isheadless,
+                        isheadless=args.headless,
                     )
-    #loader.auth()
+    try:
+        with open(args.cookies_file, 'rb') as f:
+            pass
+    except FileNotFoundError:
+        print('Cookies file are not detected. Please, authenticate login next step.')
+        loader.auth()
+    else:
+        print(f'Using cookies: {args.cookies_file}')
     loader.load_all()
 
 if __name__ == '__main__':

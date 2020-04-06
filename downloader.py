@@ -22,8 +22,8 @@ MAX_DISPLAY_SETTINGS = [1440, 2560]
 EXEC_PATH = 'chromedriver.exe'
 # File with manga urls
 URLS_FILE = 'urls.txt'
-# File with prepared coockies
-COOCKIES_FILE = 'cookies.pickle'
+# File with prepared cookies
+COOKIES_FILE = 'cookies.pickle'
 # Root directory for manga downloader
 ROOT_MANGA_DIR = 'manga'
 # Timeout to page loading in seconds
@@ -78,6 +78,22 @@ class FDownloader():
         self.timeout = timeout
         self.login = login
         self.password = password
+        try:
+            self.__set_cookies()
+        except:
+            pass
+
+
+    def __set_cookies(self):
+        self.browser.get(LOGIN_URL)
+        self.browser.delete_all_cookies()
+        with open(COOKIES_FILE, 'rb') as f:
+            cookies = pickle.load(f)
+            for cookie in cookies:
+                if 'expiry' in cookie:
+                    cookie['expiry'] = int(cookie['expiry'])
+                    self.browser.add_cookie(cookie)
+        self.browser.get(LOGIN_URL)
 
 
     def __set_headless_browser(self):
@@ -86,19 +102,8 @@ class FDownloader():
         self.browser = webdriver.Chrome(
             executable_path=self.driver_path,
             chrome_options=options)
+        self.__set_cookies
         
-        self.browser.get(LOGIN_URL)
-
-        self.browser.delete_all_cookies()
-        with open(COOCKIES_FILE, 'rb') as f:
-            cookies = pickle.load(f)
-            for cookie in cookies:
-                if 'expiry' in cookie:
-                    cookie['expiry'] = int(cookie['expiry'])
-                    self.browser.add_cookie(cookie)
-        
-        self.browser.get(LOGIN_URL)
-
 
     def auth(self):
         self.browser.get(LOGIN_URL)
@@ -109,11 +114,11 @@ class FDownloader():
         self.browser.find_element_by_class_name('js-submit').click()
 
         ready = input("Tab Enter to continue after you login...")
-        with open('cookies.txt', 'wb') as f:
+        with open(COOKIES_FILE, 'wb') as f:
             pickle.dump(self.browser.get_cookies(), f)
         
         self.browser.close()
-        self.__set_headless_browser()
+        self.__set_headless_browser()   
 
 
     def load_all(self):
@@ -129,6 +134,7 @@ class FDownloader():
                os.mkdir(manga_folder)
             self.browser.get(url)
             self.waiting_loading_page(is_main_page=True)
+            self.browser.save_screenshot('sas.png')
             page_count = self.__get_page_count(self.browser.page_source)
             print(f'Downloading "{manga_name}" manga.')
             for page_num in tqdm(range(1, page_count + 1)):
@@ -196,7 +202,7 @@ class FDownloader():
             element = EC.presence_of_element_located((By.XPATH, elem_xpath))
             WebDriverWait(self.browser, TIMEOUT).until(element)
         except TimeoutException:
-            print('Error: timed out waiting for page to load.')
+            print('\nError: timed out waiting for page to load.')
             program_exit()
 
 
