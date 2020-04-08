@@ -22,14 +22,7 @@ def main():
         type=str,
         default=COOKIES_FILE,
         help=f"Bynary file that contains saved cookies for authentication. \
-            By default -- {COOKIES_FILE}")
-    argparser.add_argument(
-        "-hl",
-        "--headless",
-        type=bool,
-        default=True,
-        help=f"Mode of working browser driver \
-            By default -- True")          
+            By default -- {COOKIES_FILE}")         
     argparser.add_argument(
         "-l",
         "--login",
@@ -60,20 +53,24 @@ def main():
             Create him and write into list of manga, or for set urls \n  \
             and downloading via console use key [--input_type]')
         program_exit()
-    loader = FDownloader(urls_file=args.file_urls, 
-                        login=args.login,
-                        password=args.password,
-                        timeout=args.timeout,
-                        isheadless=args.headless,
-                    )
+    loader = FDownloader(
+        urls_file=args.file_urls,
+        cookies_file=args.cookies_file,
+        login=args.login,
+        password=args.password,
+        timeout=args.timeout,
+    )
+
     try:
         with open(args.cookies_file, 'rb') as f:
             pass
     except FileNotFoundError:
-        print('Cookies file are not detected. Please, authenticate login next step.')
-        loader.auth()
+        print('\nCookies file are not detected. Please, authenticate login ' + \
+            'in next step and generate cookie for next runs.')
+        loader.init_browser(headless=False, auth=True)   
     else:
-        print(f'Using cookies: {args.cookies_file}')
+        print(f'\nUsing cookies: {args.cookies_file}')
+        loader.init_browser(headless=True, auth=False)
     loader.load_all()
 
 if __name__ == '__main__':

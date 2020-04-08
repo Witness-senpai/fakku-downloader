@@ -34,7 +34,6 @@ def program_exit():
     print('Program exit.')
     exit()
 
-By.CSS_SELECTOR
 
 class FDownloader():
     """
@@ -44,13 +43,13 @@ class FDownloader():
     from download via simple .toDataURL js function etc.
     """
     def __init__(self,
-            urls_file=URLS_FILE, 
+            urls_file=URLS_FILE,
+            cookies_file=COOKIES_FILE,
             driver_path=EXEC_PATH, 
             default_display=MAX_DISPLAY_SETTINGS,
             timeout=TIMEOUT,
             login=None,
             password=None,
-            isheadless=True,
         ):
         """
         param: urls_file -- string name of .txt file with urls 
@@ -68,33 +67,36 @@ class FDownloader():
             Password for authentication
         """
         self.urls = self.__get_urls_list(urls_file)
+        self.cookies_file = cookies_file
         self.driver_path = driver_path
-        options = Options()
-        options.headless = isheadless
-        self.browser = webdriver.Chrome(
-            executable_path=self.driver_path,
-            chrome_options=options)
-        self.browser.set_window_size(*default_display)
+        self.browser = None
+        self.default_display = default_display
         self.timeout = timeout
         self.login = login
         self.password = password
-        try:
+    
+    def init_browser(self, headless=True, auth=False):
+        options = Options()
+        options.headless = headless
+        self.browser = webdriver.Chrome(
+            executable_path=self.driver_path,
+            chrome_options=options
+        )
+        if auth:
+            self.__auth()
             self.__set_cookies()
-        except:
-            pass
-
+        self.browser.set_window_size(*self.default_display)
 
     def __set_cookies(self):
         self.browser.get(LOGIN_URL)
-        self.browser.delete_all_cookies()
-        with open(COOKIES_FILE, 'rb') as f:
+        #self.browser.delete_all_cookies()
+        with open(self.cookies_file, 'rb') as f:
             cookies = pickle.load(f)
             for cookie in cookies:
                 if 'expiry' in cookie:
                     cookie['expiry'] = int(cookie['expiry'])
                     self.browser.add_cookie(cookie)
-        self.browser.get(LOGIN_URL)
-
+        #self.browser.get(LOGIN_URL)
 
     def __set_headless_browser(self):
         options = Options()
@@ -102,10 +104,9 @@ class FDownloader():
         self.browser = webdriver.Chrome(
             executable_path=self.driver_path,
             chrome_options=options)
-        self.__set_cookies
-        
+        self.__set_cookies      
 
-    def auth(self):
+    def __auth(self):
         self.browser.get(LOGIN_URL)
         if not self.login is None:
             self.browser.find_element_by_id('username').send_keys(self.login)
@@ -114,17 +115,17 @@ class FDownloader():
         self.browser.find_element_by_class_name('js-submit').click()
 
         ready = input("Tab Enter to continue after you login...")
-        with open(COOKIES_FILE, 'wb') as f:
+        with open(self.cookies_file, 'wb') as f:
             pickle.dump(self.browser.get_cookies(), f)
         
         self.browser.close()
-        self.__set_headless_browser()   
-
+        #self.__set_headless_browser()   
 
     def load_all(self):
         """
         Just main function witch opening each page and save it in .png
         """
+        self.browser.set_window_size(*self.default_display)
         if not os.path.exists(ROOT_MANGA_DIR):
             os.mkdir(ROOT_MANGA_DIR)
         for url in self.urls:
@@ -134,23 +135,22 @@ class FDownloader():
                os.mkdir(manga_folder)
             self.browser.get(url)
             self.waiting_loading_page(is_main_page=True)
-            self.browser.save_screenshot('sas.png')
             page_count = self.__get_page_count(self.browser.page_source)
             print(f'Downloading "{manga_name}" manga.')
             for page_num in tqdm(range(1, page_count + 1)):
                 self.browser.get(f'{url}/read/page/{page_num}')
                 self.waiting_loading_page(is_main_page=False)
-
+                
+                # Count of leyers may be 2 or 3 therefore we get different target layer
+                n = self.browser.execute_script("return document.getElementsByClassName('layer').length")
                 # Resizing window size for exactly manga page size
-                width = self.browser.execute_script("return document.getElementsByTagName('canvas')[1].width")
-                height = self.browser.execute_script("return document.getElementsByTagName('canvas')[1].height")
+                width = self.browser.execute_script(f"return document.getElementsByTagName('canvas')[{n-2}].width")
+                height = self.browser.execute_script(f"return document.getElementsByTagName('canvas')[{n-2}].height")
                 self.browser.set_window_size(width, height)
-
                 # Delete all UI
-                self.browser.execute_script("document.getElementsByClassName('layer')[2].remove()")
+                self.browser.execute_script(f"document.getElementsByClassName('layer')[{n-1}].remove()")
                 self.browser.save_screenshot(f'{manga_folder}\\{page_num}.png')
             print('>> manga done!')
-
 
     def __get_page_count(self, page_source):
         """
@@ -170,10 +170,10 @@ class FDownloader():
                 print(ex)
         return page_count
 
-
     def __get_urls_list(self, urls_file):
         """
         Get list of urls from .txt file
+        --------------------------
         param: urls_file -- string
             Name or path of .txt file with manga urls
         return: urls -- list
@@ -185,10 +185,10 @@ class FDownloader():
                 urls.append(line.replace('\n',''))
         return urls        
 
-
     def waiting_loading_page(self, is_main_page=True):
         """
         Awaiting while page will load
+        ---------------------------
         param: is_main_page -- bool
             False -- awaiting of main manga page
             True -- awaiting of others manga pages
@@ -200,7 +200,7 @@ class FDownloader():
             elem_xpath = "//div[@data-name='PageView']"
         try:
             element = EC.presence_of_element_located((By.XPATH, elem_xpath))
-            WebDriverWait(self.browser, TIMEOUT).until(element)
+            WebDriverWait(self.browser, 3*TIMEOUT).until(element)
         except TimeoutException:
             print('\nError: timed out waiting for page to load.')
             program_exit()
