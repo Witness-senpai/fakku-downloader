@@ -1,6 +1,6 @@
 # fakku-downloader
 
-Fakku-downloadred - this is python script thats allows download manga dyrectly from fakku.net.
+Fakku-downloadred - this is python script that allows download manga directly from fakku.net.
 
 ### The problem
 
