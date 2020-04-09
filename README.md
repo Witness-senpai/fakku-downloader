@@ -13,11 +13,11 @@ As far as I know, Manga reader first decodes the encrypted image and then displa
 In my opinion, the simplest and fastest solution for downloading manga from fakku.net is to simply open it in a browser and save a screenshot of each page. Fakku-downloader automates this process in background using headless browser.
 
 ## How to launch
-
-* Download [ChromeDriver](https://chromedriver.chromium.org/downloads) the same version as you Chrome Browser and move it in root folder.
+1) Download or clone this repository
+2) Download [ChromeDriver](https://chromedriver.chromium.org/downloads) the same version as you Chrome Browser and move it in root folder.
 (Rename it to **chromedriver.exe**)
-* Create **urls.txt** file in root folder and write into that urls of manga one by line
-* Write the command <code>python main.py</code>
+3) Create **urls.txt** file in root folder and write into that urls of manga one by line
+4) Open downloaded folder in command line and run the command <code>python main.py</code>
 
 ## Some features 
 * Use key -t for set timeout between loading the pages. If quality of .png is bad, or program somewhere crush its can help.
