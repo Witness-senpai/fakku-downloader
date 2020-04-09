@@ -9,7 +9,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, JavascriptException
 
 from bs4 import BeautifulSoup as bs
 from tqdm import tqdm
@@ -54,6 +54,8 @@ class FDownloader():
         """
         param: urls_file -- string name of .txt file with urls 
             Contains list of manga urls, that's to be downloaded
+        param: cookies_file -- string name of .picle file with cookies 
+            Contains bynary data with cookies
         param: driver_path -- string
             Path to the headless driver
         param: default_display -- list of two int (width, height)    
@@ -75,16 +77,23 @@ class FDownloader():
         self.login = login
         self.password = password
     
-    def init_browser(self, headless=True, auth=False):
+    def init_browser(self, headless=False):
+        """
+        Initializing browser and authenticate if necessary
+        ---------------------
+        param: headless -- bool
+            If True: launch browser in headless mode(for download manga)
+            If False: launch usualy browser with GUI(for first authenticate)
+        """
         options = Options()
         options.headless = headless
         self.browser = webdriver.Chrome(
             executable_path=self.driver_path,
             chrome_options=options
         )
-        if auth:
+        if not headless:
             self.__auth()
-            self.__set_cookies()
+        self.__set_cookies()
         self.browser.set_window_size(*self.default_display)
 
     def __set_cookies(self):
@@ -96,17 +105,22 @@ class FDownloader():
                 if 'expiry' in cookie:
                     cookie['expiry'] = int(cookie['expiry'])
                     self.browser.add_cookie(cookie)
-        #self.browser.get(LOGIN_URL)
+        # self.browser.get(LOGIN_URL)
 
-    def __set_headless_browser(self):
+    def __init_headless_browser(self):
+        """
+        Recreating browser in headless mode(without GUI)
+        """
         options = Options()
         options.headless = True
         self.browser = webdriver.Chrome(
             executable_path=self.driver_path,
-            chrome_options=options)
-        self.__set_cookies      
+            chrome_options=options)    
 
     def __auth(self):
+        """
+        Authentication in browser with GUI for saving cookies in first time
+        """
         self.browser.get(LOGIN_URL)
         if not self.login is None:
             self.browser.find_element_by_id('username').send_keys(self.login)
@@ -119,7 +133,8 @@ class FDownloader():
             pickle.dump(self.browser.get_cookies(), f)
         
         self.browser.close()
-        #self.__set_headless_browser()   
+        # Recreating browser in headless mode for next manga downloading
+        self.__init_headless_browser()   
 
     def load_all(self):
         """
@@ -140,13 +155,17 @@ class FDownloader():
             for page_num in tqdm(range(1, page_count + 1)):
                 self.browser.get(f'{url}/read/page/{page_num}')
                 self.waiting_loading_page(is_main_page=False)
-                
+
                 # Count of leyers may be 2 or 3 therefore we get different target layer
                 n = self.browser.execute_script("return document.getElementsByClassName('layer').length")
-                # Resizing window size for exactly manga page size
-                width = self.browser.execute_script(f"return document.getElementsByTagName('canvas')[{n-2}].width")
-                height = self.browser.execute_script(f"return document.getElementsByTagName('canvas')[{n-2}].height")
-                self.browser.set_window_size(width, height)
+                try:
+                    # Resizing window size for exactly manga page size
+                    width = self.browser.execute_script(f"return document.getElementsByTagName('canvas')[{n-2}].width")
+                    height = self.browser.execute_script(f"return document.getElementsByTagName('canvas')[{n-2}].height")
+                    self.browser.set_window_size(width, height)
+                except JavascriptException:
+                    print('\nSome error with JS. Page source are note ready. You can try increase argument -t')
+
                 # Delete all UI
                 self.browser.execute_script(f"document.getElementsByClassName('layer')[{n-1}].remove()")
                 self.browser.save_screenshot(f'{manga_folder}\\{page_num}.png')
@@ -154,6 +173,8 @@ class FDownloader():
 
     def __get_page_count(self, page_source):
         """
+        Get count of manga pages from html code
+        ----------------------------
         param: page_sourse -- string
             String that contains html code
         return: int
@@ -202,7 +223,8 @@ class FDownloader():
             element = EC.presence_of_element_located((By.XPATH, elem_xpath))
             WebDriverWait(self.browser, 3*TIMEOUT).until(element)
         except TimeoutException:
-            print('\nError: timed out waiting for page to load.')
+            print('\nError: timed out waiting for page to load. + \
+                You can try increase param -t for more delaying.')
             program_exit()
 
 

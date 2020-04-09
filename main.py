@@ -67,10 +67,10 @@ def main():
     except FileNotFoundError:
         print('\nCookies file are not detected. Please, authenticate login ' + \
             'in next step and generate cookie for next runs.')
-        loader.init_browser(headless=False, auth=True)   
+        loader.init_browser(headless=False)   
     else:
-        print(f'\nUsing cookies: {args.cookies_file}')
-        loader.init_browser(headless=True, auth=False)
+        print(f'\nUsing cookies file: {args.cookies_file}')
+        loader.init_browser(headless=True)
     loader.load_all()
 
 if __name__ == '__main__':
