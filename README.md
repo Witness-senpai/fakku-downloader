@@ -17,7 +17,7 @@ In my opinion, the simplest and fastest solution for downloading manga from fakk
 2) Download [ChromeDriver](https://chromedriver.chromium.org/downloads) the same version as you Chrome Browser and move it in root folder.
 (Rename it to **chromedriver.exe**)
 3) Create **urls.txt** file in root folder and write into that urls of manga one by line
-4) Install all requirements for script via run **install.bat** (for Windows)
+4) Install all requirements for script via run **install.bat** (for Windows) or run <code>pip install -r requirements.txt<code>
 5) Open root folder in command line and run the command <code>python main.py</code>
 
 ## Some features 
