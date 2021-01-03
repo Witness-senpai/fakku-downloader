@@ -3,3 +3,4 @@ chromedriver.exe
 manga/*/*.png
 .DS_Store
 cookies.pickle
+done.txt

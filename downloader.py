@@ -30,6 +30,8 @@ COOKIES_FILE = 'cookies.pickle'
 ROOT_MANGA_DIR = 'manga'
 # Timeout to page loading in seconds
 TIMEOUT = 5
+# Wait between page loading in seconds
+WAIT = 1
 
 
 def program_exit():
@@ -51,6 +53,7 @@ class FDownloader():
             driver_path=EXEC_PATH,
             default_display=MAX_DISPLAY_SETTINGS,
             timeout=TIMEOUT,
+            wait=WAIT,
             login=None,
             password=None,
         ):
@@ -78,6 +81,7 @@ class FDownloader():
         self.browser = None
         self.default_display = default_display
         self.timeout = timeout
+        self.wait = wait
         self.login = login
         self.password = password
 
@@ -223,11 +227,11 @@ class FDownloader():
         if is_main_page:
             elem_xpath = "//link[@type='image/x-icon']"
         else:
-            sleep(self.timeout)
+            sleep(self.wait)
             elem_xpath = "//div[@data-name='PageView']"
         try:
             element = EC.presence_of_element_located((By.XPATH, elem_xpath))
-            WebDriverWait(self.browser, TIMEOUT).until(element)
+            WebDriverWait(self.browser, self.timeout).until(element)
         except TimeoutException:
             print('\nError: timed out waiting for page to load. + \
                 You can try increase param -t for more delaying.')

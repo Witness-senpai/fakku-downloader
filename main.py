@@ -49,8 +49,15 @@ def main():
         "--timeout",
         type=float,
         default=TIMEOUT,
-        help=f"Timeout in seconds for pauses beetween downloading pages \
+        help=f"Timeout in seconds for how long to wait to take screenshot \
             Increase this argument if quality of pages is bad. By default -- {TIMEOUT} sec")
+    argparser.add_argument(
+        "-w",
+        "--wait",
+        type=float,
+        default=WAIT,
+        help=f"Wait time in seconds for pauses beetween downloading pages \
+            Increase this argument if you become blocked. By default -- {WAIT} sec")
     args = argparser.parse_args()
 
     try:
@@ -64,10 +71,12 @@ def main():
         program_exit()
     loader = FDownloader(
         urls_file=args.file_urls,
+        done_file=args.done_file,
         cookies_file=args.cookies_file,
         login=args.login,
         password=args.password,
         timeout=args.timeout,
+        wait=args.wait,
     )
 
     try:
