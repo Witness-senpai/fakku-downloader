@@ -199,7 +199,8 @@ class FDownloader():
         page_count = None
         if not page_count:
             try:
-                page_count = int(soup.find_all('div', attrs={'class': 'row'})[5]
+                divs = soup.find_all('div', attrs={'class': 'row'})
+                page_count = int(next(x for x in divs if x(text="Pages"))
                     .find('div', attrs={'class': 'row-right'}).text
                     .split(' ')[0])
             except Exception as ex:
