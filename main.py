@@ -2,6 +2,7 @@ import argparse
 from downloader import (FDownloader,
                         program_exit,
                         TIMEOUT,
+                        WAIT,
                         URLS_FILE,
                         DONE_FILE,
                         COOKIES_FILE,

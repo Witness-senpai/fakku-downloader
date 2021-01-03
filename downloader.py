@@ -60,6 +60,8 @@ class FDownloader():
         """
         param: urls_file -- string name of .txt file with urls
             Contains list of manga urls, that's to be downloaded
+        param: done_file -- string name of .txt file with urls
+            Contains list of manga urls that have successfully been downloaded
         param: cookies_file -- string name of .picle file with cookies
             Contains bynary data with cookies
         param: driver_path -- string
@@ -67,14 +69,17 @@ class FDownloader():
         param: default_display -- list of two int (width, height)
             Initial display settings. After loading the page, they will be changed
         param: timeout -- float
-            Timeout in seconds beetween pages downloading.
+            Timeout upon waiting for page to load
+            If <5 may be poor quality.
+        param: wait -- float
+            Wait in seconds beetween pages downloading.
             If <1 may be poor quality.
         param: login -- string
             Login or email for authentication
         param: password -- string
             Password for authentication
         """
-        self.urls = self.__get_urls_list(urls_file)
+        self.urls = self.__get_urls_list(urls_file, done_file)
         self.done_file = done_file
         self.cookies_file = cookies_file
         self.driver_path = driver_path
@@ -201,19 +206,28 @@ class FDownloader():
                 print(ex)
         return page_count
 
-    def __get_urls_list(self, urls_file):
+    def __get_urls_list(self, urls_file, done_file):
         """
         Get list of urls from .txt file
         --------------------------
         param: urls_file -- string
             Name or path of .txt file with manga urls
+        param: done_file -- string
+            Name or path of .txt file with successfully downloaded manga urls
         return: urls -- list
             List of urls from urls_file
         """
+        done = []
+        with open(done_file, 'r') as donef:
+            for line in donef:
+                done.append(line.replace('\n',''))
+
         urls = []
         with open(urls_file, 'r') as f:
             for line in f:
-                urls.append(line.replace('\n',''))
+                clean_line = line.replace('\n','')
+                if clean_line not in done:
+                    urls.append(clean_line)
         return urls
 
     def waiting_loading_page(self, is_main_page=True):
