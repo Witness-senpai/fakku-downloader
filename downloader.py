@@ -14,7 +14,7 @@ from selenium.common.exceptions import TimeoutException, JavascriptException
 from bs4 import BeautifulSoup as bs
 from tqdm import tqdm
 
-LOGIN_URL = 'http://www.fakku.net/login/'
+LOGIN_URL = 'https://www.fakku.net/login/'
 # Initial display settings for headless browser. Any manga in this
 # resolution will be opened correctly and with the best quality.
 MAX_DISPLAY_SETTINGS = [1440, 2560]
@@ -28,7 +28,7 @@ COOKIES_FILE = 'cookies.pickle'
 ROOT_MANGA_DIR = 'manga'
 # Timeout to page loading in seconds
 TIMEOUT = 1
- 
+
 
 def program_exit():
     print('Program exit.')
@@ -37,7 +37,7 @@ def program_exit():
 
 class FDownloader():
     """
-    Class which allows download manga. 
+    Class which allows download manga.
     The main idea of download - using headless browser and just saving
     screenshot from that. Because canvas in fakku.net is protected
     from download via simple .toDataURL js function etc.
@@ -45,23 +45,23 @@ class FDownloader():
     def __init__(self,
             urls_file=URLS_FILE,
             cookies_file=COOKIES_FILE,
-            driver_path=EXEC_PATH, 
+            driver_path=EXEC_PATH,
             default_display=MAX_DISPLAY_SETTINGS,
             timeout=TIMEOUT,
             login=None,
             password=None,
         ):
         """
-        param: urls_file -- string name of .txt file with urls 
+        param: urls_file -- string name of .txt file with urls
             Contains list of manga urls, that's to be downloaded
-        param: cookies_file -- string name of .picle file with cookies 
+        param: cookies_file -- string name of .picle file with cookies
             Contains bynary data with cookies
         param: driver_path -- string
             Path to the headless driver
-        param: default_display -- list of two int (width, height)    
+        param: default_display -- list of two int (width, height)
             Initial display settings. After loading the page, they will be changed
         param: timeout -- float
-            Timeout in seconds beetween pages downloading. 
+            Timeout in seconds beetween pages downloading.
             If <1 may be poor quality.
         param: login -- string
             Login or email for authentication
@@ -76,7 +76,7 @@ class FDownloader():
         self.timeout = timeout
         self.login = login
         self.password = password
-    
+
     def init_browser(self, headless=False):
         """
         Initializing browser and authenticate if necessary
@@ -115,7 +115,7 @@ class FDownloader():
         options.headless = True
         self.browser = webdriver.Chrome(
             executable_path=self.driver_path,
-            chrome_options=options)    
+            chrome_options=options)
 
     def __auth(self):
         """
@@ -131,10 +131,10 @@ class FDownloader():
         ready = input("Tab Enter to continue after you login...")
         with open(self.cookies_file, 'wb') as f:
             pickle.dump(self.browser.get_cookies(), f)
-        
+
         self.browser.close()
         # Recreating browser in headless mode for next manga downloading
-        self.__init_headless_browser()   
+        self.__init_headless_browser()
 
     def load_all(self):
         """
@@ -145,7 +145,7 @@ class FDownloader():
             os.mkdir(ROOT_MANGA_DIR)
         for url in self.urls:
             manga_name = url.split('/')[-1]
-            manga_folder = f'{ROOT_MANGA_DIR}\\{manga_name}'
+            manga_folder = os.sep.join([ROOT_MANGA_DIR, manga_name])
             if not os.path.exists(manga_folder):
                os.mkdir(manga_folder)
             self.browser.get(url)
@@ -168,7 +168,7 @@ class FDownloader():
 
                 # Delete all UI
                 self.browser.execute_script(f"document.getElementsByClassName('layer')[{n-1}].remove()")
-                self.browser.save_screenshot(f'{manga_folder}\\{page_num}.png')
+                self.browser.save_screenshot(os.sep.join([manga_folder, f'{page_num}.png']))
             print('>> manga done!')
 
     def __get_page_count(self, page_source):
@@ -204,7 +204,7 @@ class FDownloader():
         with open(urls_file, 'r') as f:
             for line in f:
                 urls.append(line.replace('\n',''))
-        return urls        
+        return urls
 
     def waiting_loading_page(self, is_main_page=True):
         """
@@ -226,5 +226,3 @@ class FDownloader():
             print('\nError: timed out waiting for page to load. + \
                 You can try increase param -t for more delaying.')
             program_exit()
-
-
