@@ -31,7 +31,7 @@ ROOT_MANGA_DIR = 'manga'
 # Timeout to page loading in seconds
 TIMEOUT = 5
 # Wait between page loading in seconds
-WAIT = 1
+WAIT = 0.75
 
 
 def program_exit():
@@ -168,7 +168,7 @@ class FDownloader():
                 print(f'Downloading "{manga_name}" manga.')
                 for page_num in tqdm(range(1, page_count + 1)):
                     self.browser.get(f'{url}/read/page/{page_num}')
-                    self.waiting_loading_page(is_main_page=False)
+                    self.waiting_loading_page(is_main_page=False, is_first_page=(page_num == 1))
 
                     # Count of leyers may be 2 or 3 therefore we get different target layer
                     n = self.browser.execute_script("return document.getElementsByClassName('layer').length")
@@ -230,16 +230,22 @@ class FDownloader():
                     urls.append(clean_line)
         return urls
 
-    def waiting_loading_page(self, is_main_page=True):
+    def waiting_loading_page(self, is_main_page=True, is_first_page=False):
         """
         Awaiting while page will load
         ---------------------------
         param: is_main_page -- bool
             False -- awaiting of main manga page
             True -- awaiting of others manga pages
+        param: is_main_page -- bool
+            False -- the page num != 1
+            True -- this is the first page, we need to wait longer to get good quality
         """
         if is_main_page:
             elem_xpath = "//link[@type='image/x-icon']"
+        elif is_first_page:
+            sleep(self.wait * 3)
+            elem_xpath = "//div[@data-name='PageView']"
         else:
             sleep(self.wait)
             elem_xpath = "//div[@data-name='PageView']"
