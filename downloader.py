@@ -22,6 +22,8 @@ MAX_DISPLAY_SETTINGS = [1440, 2560]
 EXEC_PATH = 'chromedriver.exe'
 # File with manga urls
 URLS_FILE = 'urls.txt'
+# File with completed urls
+DONE_FILE = 'done.txt'
 # File with prepared cookies
 COOKIES_FILE = 'cookies.pickle'
 # Root directory for manga downloader
@@ -44,6 +46,7 @@ class FDownloader():
     """
     def __init__(self,
             urls_file=URLS_FILE,
+            done_file=DONE_FILE,
             cookies_file=COOKIES_FILE,
             driver_path=EXEC_PATH,
             default_display=MAX_DISPLAY_SETTINGS,
@@ -69,6 +72,7 @@ class FDownloader():
             Password for authentication
         """
         self.urls = self.__get_urls_list(urls_file)
+        self.done_file = done_file
         self.cookies_file = cookies_file
         self.driver_path = driver_path
         self.browser = None
@@ -143,39 +147,41 @@ class FDownloader():
         self.browser.set_window_size(*self.default_display)
         if not os.path.exists(ROOT_MANGA_DIR):
             os.mkdir(ROOT_MANGA_DIR)
-        for url in self.urls:
-            manga_name = url.split('/')[-1]
-            manga_folder = os.sep.join([ROOT_MANGA_DIR, manga_name])
-            if not os.path.exists(manga_folder):
-               os.mkdir(manga_folder)
-            self.browser.get(url)
-            self.waiting_loading_page(is_main_page=True)
-            page_count = self.__get_page_count(self.browser.page_source)
-            print(f'Downloading "{manga_name}" manga.')
-            for page_num in tqdm(range(1, page_count + 1)):
-                self.browser.get(f'{url}/read/page/{page_num}')
-                self.waiting_loading_page(is_main_page=False)
+        with open(self.done_file, 'a') as done_file_obj:
+            for url in self.urls:
+                manga_name = url.split('/')[-1]
+                manga_folder = os.sep.join([ROOT_MANGA_DIR, manga_name])
+                if not os.path.exists(manga_folder):
+                   os.mkdir(manga_folder)
+                self.browser.get(url)
+                self.waiting_loading_page(is_main_page=True)
+                page_count = self.__get_page_count(self.browser.page_source)
+                print(f'Downloading "{manga_name}" manga.')
+                for page_num in tqdm(range(1, page_count + 1)):
+                    self.browser.get(f'{url}/read/page/{page_num}')
+                    self.waiting_loading_page(is_main_page=False)
 
-                # Count of leyers may be 2 or 3 therefore we get different target layer
-                n = self.browser.execute_script("return document.getElementsByClassName('layer').length")
-                try:
-                    # Resizing window size for exactly manga page size
-                    width = self.browser.execute_script(f"return document.getElementsByTagName('canvas')[{n-2}].width")
-                    height = self.browser.execute_script(f"return document.getElementsByTagName('canvas')[{n-2}].height")
-                    self.browser.set_window_size(width, height)
-                except JavascriptException:
-                    print('\nSome error with JS. Page source are note ready. You can try increase argument -t')
+                    # Count of leyers may be 2 or 3 therefore we get different target layer
+                    n = self.browser.execute_script("return document.getElementsByClassName('layer').length")
+                    try:
+                        # Resizing window size for exactly manga page size
+                        width = self.browser.execute_script(f"return document.getElementsByTagName('canvas')[{n-2}].width")
+                        height = self.browser.execute_script(f"return document.getElementsByTagName('canvas')[{n-2}].height")
+                        self.browser.set_window_size(width, height)
+                    except JavascriptException:
+                        print('\nSome error with JS. Page source are note ready. You can try increase argument -t')
 
-                # Delete all UI
-                self.browser.execute_script(f"document.getElementsByClassName('layer')[{n-1}].remove()")
-                self.browser.save_screenshot(os.sep.join([manga_folder, f'{page_num}.png']))
-            print('>> manga done!')
+                    # Delete all UI
+                    self.browser.execute_script(f"document.getElementsByClassName('layer')[{n-1}].remove()")
+                    self.browser.save_screenshot(os.sep.join([manga_folder, f'{page_num}.png']))
+                print('>> manga done!')
+                done_file_obj.write(f'{url}\n')
 
     def __get_page_count(self, page_source):
         """
         Get count of manga pages from html code
         ----------------------------
-        param: page_sourse -- string
+        param: page_source -- string
             String that contains html code
         return: int
             Number of manga pages

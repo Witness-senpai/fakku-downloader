@@ -3,6 +3,7 @@ from downloader import (FDownloader,
                         program_exit,
                         TIMEOUT,
                         URLS_FILE,
+                        DONE_FILE,
                         COOKIES_FILE,
                     )
 
@@ -15,14 +16,22 @@ def main():
         type=str,
         default=URLS_FILE,
         help=f".txt file that contains list of urls for download if \
-            key [--input_type] == file. By default -- {URLS_FILE}")
+            By default -- {URLS_FILE}")
+    argparser.add_argument(
+        "-d",
+        "--done_file",
+        type=str,
+        default=DONE_FILE,
+        help=f".txt file that contains list of urls that have been downloaded. \
+            This is used to resume in the event that the process stops midway. \
+            By default -- {DONE_FILE}")
     argparser.add_argument(
         "-c",
         "--cookies_file",
         type=str,
         default=COOKIES_FILE,
         help=f"Bynary file that contains saved cookies for authentication. \
-            By default -- {COOKIES_FILE}")         
+            By default -- {COOKIES_FILE}")
     argparser.add_argument(
         "-l",
         "--login",
@@ -67,7 +76,7 @@ def main():
     except FileNotFoundError:
         print('\nCookies file are not detected. Please, authenticate login ' + \
             'in next step and generate cookie for next runs.')
-        loader.init_browser(headless=False)   
+        loader.init_browser(headless=False)
     else:
         print(f'\nUsing cookies file: {args.cookies_file}')
         loader.init_browser(headless=True)
