@@ -8,7 +8,7 @@ Fakku-downloadred - this is python script that allows download manga directly fr
 
 As far as I know, Manga reader first decodes the encrypted image and then displays it on the html canvas. This is done so tricky that I could not find a way to automate the downloading of canvas because the JS functions for this are blocked in the domain. Therefore, in order to download manga, you need to do some non-trivial actions manually. And this will have to be done separately for each page.
 
-### The easyes solution
+### The easiest solution
 
 In my opinion, the simplest and fastest solution for downloading manga from fakku.net is to simply open it in a browser and save a screenshot of each page. Fakku-downloader automates this process in background using headless browser.
 
@@ -20,14 +20,14 @@ In my opinion, the simplest and fastest solution for downloading manga from fakk
 4) Install all requirements for script via run **install.bat** (for Windows) or run <code>pip install -r requirements.txt</code>
 5) Open root folder in command line and run the command <code>python main.py</code>
 
-## Some features 
+## Some features
 * Use key -t for set timeout between loading the pages. If quality of .png is bad, or program somewhere crush its can help.
 * Use keys -l and -p for write the login and password in command
 * More technical information you can find in comments to code
 
 ---
 
-## Work example
+## Working example
 
 1. After downloading the repository, chromedriver and creating urls.txt file, root folder will be like this:
 <p align="center">
@@ -57,3 +57,17 @@ In my opinion, the simplest and fastest solution for downloading manga from fakk
 <p align="center">
 	<img src="https://github.com/Witness-senpai/fakku-downloader/blob/master/readme_png/7.PNG" width="800">
 </p>
+
+## Extra: Download URLs from a Collection
+
+If you have a collection that has the manga that you would like to download,
+you can generate a **urls.txt** file that has all of its links.
+
+Setup as above, and then call like this:
+
+```bash
+python main.py -z https://www.fakku.net/users/MY-USER-12345/collections/MY-COLLECTION
+```
+
+This will make a **urls.txt** file with the links, then run the program as normal
+with this file as input.
