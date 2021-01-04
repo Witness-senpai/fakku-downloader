@@ -176,9 +176,15 @@ class FDownloader():
                 self.waiting_loading_page(is_reader_page=False)
                 page_count = self.__get_page_count(self.browser.page_source)
                 print(f'Downloading "{manga_name}" manga.')
+                delay_before_fetching = True # When fetching the first page, multiple pages load and the reader slows down
                 for page_num in tqdm(range(1, page_count + 1)):
+                    destination_file = os.sep.join([manga_folder, f'{page_num}.png'])
+                    if os.path.isfile(destination_file):
+                        delay_before_fetching = True #When skipping files, the reader will load multiple pages and slow down again
+                        continue
                     self.browser.get(f'{url}/read/page/{page_num}')
-                    self.waiting_loading_page(is_reader_page=True, is_first_page=(page_num == 1))
+                    self.waiting_loading_page(is_reader_page=True, should_add_delay=delay_before_fetching)
+                    delay_before_fetching = False
 
                     # Count of leyers may be 2 or 3 therefore we get different target layer
                     n = self.browser.execute_script("return document.getElementsByClassName('layer').length")
@@ -192,7 +198,7 @@ class FDownloader():
 
                     # Delete all UI
                     self.browser.execute_script(f"document.getElementsByClassName('layer')[{n-1}].remove()")
-                    self.browser.save_screenshot(os.sep.join([manga_folder, f'{page_num}.png']))
+                    self.browser.save_screenshot(destination_file)
                 print('>> manga done!')
                 done_file_obj.write(f'{url}\n')
                 urls_processed += 1
@@ -279,21 +285,21 @@ class FDownloader():
                     urls.append(clean_line)
         return urls
 
-    def waiting_loading_page(self, is_reader_page=False, is_first_page=False):
+    def waiting_loading_page(self, is_reader_page=False, should_add_delay=False):
         """
         Awaiting while page will load
         ---------------------------
         param: is_non_reader_page -- bool
             False -- awaiting of main manga page
             True -- awaiting of others manga pages
-        param: is_first_page -- bool
+        param: should_add_delay -- bool
             False -- the page num != 1
             True -- this is the first page, we need to wait longer to get good quality
         """
         if not is_reader_page:
             sleep(self.wait)
             elem_xpath = "//link[@type='image/x-icon']"
-        elif is_first_page:
+        elif should_add_delay:
             sleep(self.wait * 3)
             elem_xpath = "//div[@data-name='PageView']"
         else:
