@@ -8,10 +8,19 @@ from downloader import (FDownloader,
                         COOKIES_FILE,
                         ROOT_MANGA_DIR,
                     )
-
+from pathlib import Path
 
 def main():
     argparser = argparse.ArgumentParser()
+    argparser.add_argument(
+        "-z",
+        "--collection_url",
+        type=str,
+        default=None,
+        help=f"Give a collection URL that will be parsed and loaded into urls.txt \
+            The normal operations of downloading manga images will not happen while this \
+            parameter is set. \
+            By default -- None, process the urls.txt instead")
     argparser.add_argument(
         "-f",
         "--file_urls",
@@ -69,14 +78,21 @@ def main():
             Increase this argument if you become blocked. By default -- {WAIT} sec")
     args = argparser.parse_args()
 
+    # This is to create a new file for collection_urls to be downloaded
+    if args.collection_url:
+        url_file = args.file_urls
+        if not args.file_urls:
+            url_file = URLS_FILE
+        Path(url_file).touch()
+
     try:
         with open(args.file_urls, 'r') as f:
             pass
     except FileNotFoundError:
 
-        print(f'File {args.file_urls} are not exist in folder. \n  \
-            Create him and write into list of manga, or for set urls \n  \
-            and downloading via console use key [--input_type]')
+        print(f'File {args.file_urls} does not exist in folder.\n \
+            Create it and write the list of manga urls first.\n \
+            Or run this again with the -z parameter with a collection_url to download urls first.')
         program_exit()
     loader = FDownloader(
         urls_file=args.file_urls,
@@ -99,7 +115,11 @@ def main():
     else:
         print(f'\nUsing cookies file: {args.cookies_file}')
         loader.init_browser(headless=True)
-    loader.load_all()
+
+    if args.collection_url:
+        loader.load_urls_from_collection(args.collection_url)
+    else:
+        loader.load_all()
 
 if __name__ == '__main__':
     main()

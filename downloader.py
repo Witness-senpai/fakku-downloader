@@ -1,5 +1,6 @@
 import os
 import pickle
+import re
 
 from shutil import rmtree
 from time import sleep
@@ -14,7 +15,8 @@ from selenium.common.exceptions import TimeoutException, JavascriptException
 from bs4 import BeautifulSoup as bs
 from tqdm import tqdm
 
-LOGIN_URL = 'https://www.fakku.net/login/'
+BASE_URL = 'https://www.fakku.net'
+LOGIN_URL = f'{BASE_URL}/login/'
 # Initial display settings for headless browser. Any manga in this
 # resolution will be opened correctly and with the best quality.
 MAX_DISPLAY_SETTINGS = [1440, 2560]
@@ -80,6 +82,7 @@ class FDownloader():
         param: password -- string
             Password for authentication
         """
+        self.urls_file = urls_file
         self.urls = self.__get_urls_list(urls_file, done_file)
         self.done_file = done_file
         self.cookies_file = cookies_file
@@ -153,7 +156,7 @@ class FDownloader():
 
     def load_all(self):
         """
-        Just main function witch opening each page and save it in .png
+        Just main function which opening each page and save it in .png
         """
         self.browser.set_window_size(*self.default_display)
         if not os.path.exists(self.root_manga_dir):
@@ -165,12 +168,12 @@ class FDownloader():
                 if not os.path.exists(manga_folder):
                    os.mkdir(manga_folder)
                 self.browser.get(url)
-                self.waiting_loading_page(is_main_page=True)
+                self.waiting_loading_page(is_reader_page=False)
                 page_count = self.__get_page_count(self.browser.page_source)
                 print(f'Downloading "{manga_name}" manga.')
                 for page_num in tqdm(range(1, page_count + 1)):
                     self.browser.get(f'{url}/read/page/{page_num}')
-                    self.waiting_loading_page(is_main_page=False, is_first_page=(page_num == 1))
+                    self.waiting_loading_page(is_reader_page=True, is_first_page=(page_num == 1))
 
                     # Count of leyers may be 2 or 3 therefore we get different target layer
                     n = self.browser.execute_script("return document.getElementsByClassName('layer').length")
@@ -187,6 +190,22 @@ class FDownloader():
                     self.browser.save_screenshot(os.sep.join([manga_folder, f'{page_num}.png']))
                 print('>> manga done!')
                 done_file_obj.write(f'{url}\n')
+
+    def load_urls_from_collection(self, collection_url):
+        """
+        Function which records the manga URLs inside a collection
+        """
+        self.browser.get(collection_url)
+        self.waiting_loading_page(is_reader_page=False)
+        page_count = self.__get_page_count_in_collection(self.browser.page_source)
+        with open(self.urls_file, 'a') as f:
+            for page_num in tqdm(range(1, page_count + 1)):
+                if page_num != 1: #Fencepost problem, the first page of a collection is already loaded
+                    self.browser.get(f'{collection_url}/page/{page_num}')
+                    self.waiting_loading_page(is_reader_page=False)
+                soup = bs(self.browser.page_source, 'html.parser')
+                for div in soup.find_all('div', attrs={'class': 'book-title'}):
+                    f.write(f"{BASE_URL}{div.find('a')['href']}\n")
 
     def __get_page_count(self, page_source):
         """
@@ -205,6 +224,25 @@ class FDownloader():
                 page_count = int(next(x for x in divs if x(text="Pages"))
                     .find('div', attrs={'class': 'row-right'}).text
                     .split(' ')[0])
+            except Exception as ex:
+                print(ex)
+        return page_count
+
+    def __get_page_count_in_collection(self, page_source):
+        """
+        Get count of collection pages from html code
+        ----------------------------
+        param: page_source -- string
+            String that contains html code
+        return: int
+            Number of collection pages
+        """
+        soup = bs(page_source, 'html.parser')
+        page_count = None
+        if not page_count:
+            try:
+                pagination_text = soup.find('div', attrs={'class': 'pagination-meta'}).text
+                page_count = int(re.search("Page\s+\d+\s+of\s+(\d+)", pagination_text).group(1))
             except Exception as ex:
                 print(ex)
         return page_count
@@ -233,18 +271,19 @@ class FDownloader():
                     urls.append(clean_line)
         return urls
 
-    def waiting_loading_page(self, is_main_page=True, is_first_page=False):
+    def waiting_loading_page(self, is_reader_page=False, is_first_page=False):
         """
         Awaiting while page will load
         ---------------------------
-        param: is_main_page -- bool
+        param: is_non_reader_page -- bool
             False -- awaiting of main manga page
             True -- awaiting of others manga pages
-        param: is_main_page -- bool
+        param: is_first_page -- bool
             False -- the page num != 1
             True -- this is the first page, we need to wait longer to get good quality
         """
-        if is_main_page:
+        if not is_reader_page:
+            sleep(self.wait)
             elem_xpath = "//link[@type='image/x-icon']"
         elif is_first_page:
             sleep(self.wait * 3)
