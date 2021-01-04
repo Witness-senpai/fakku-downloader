@@ -7,6 +7,7 @@ from downloader import (FDownloader,
                         DONE_FILE,
                         COOKIES_FILE,
                         ROOT_MANGA_DIR,
+                        MAX,
                     )
 from pathlib import Path
 
@@ -76,6 +77,13 @@ def main():
         default=WAIT,
         help=f"Wait time in seconds for pauses beetween downloading pages \
             Increase this argument if you become blocked. By default -- {WAIT} sec")
+    argparser.add_argument(
+        "-m",
+        "--max",
+        type=int,
+        default=MAX,
+        help=f"Max number of volumes to download at once \
+            Set this argument if you become blocked. By default -- No limit")
     args = argparser.parse_args()
 
     # This is to create a new file for collection_urls to be downloaded
@@ -103,6 +111,7 @@ def main():
         password=args.password,
         timeout=args.timeout,
         wait=args.wait,
+        max=args.max,
     )
 
     try:

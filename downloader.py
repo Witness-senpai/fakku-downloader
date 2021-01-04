@@ -34,6 +34,8 @@ ROOT_MANGA_DIR = 'manga'
 TIMEOUT = 5
 # Wait between page loading in seconds
 WAIT = 0.75
+# Max manga to download in one session (-1 == no limit)
+MAX = None
 
 
 def program_exit():
@@ -59,6 +61,7 @@ class FDownloader():
             wait=WAIT,
             login=None,
             password=None,
+            max=MAX,
         ):
         """
         param: urls_file -- string name of .txt file with urls
@@ -94,6 +97,7 @@ class FDownloader():
         self.wait = wait
         self.login = login
         self.password = password
+        self.max = max
 
     def init_browser(self, headless=False):
         """
@@ -162,6 +166,7 @@ class FDownloader():
         if not os.path.exists(self.root_manga_dir):
             os.mkdir(self.root_manga_dir)
         with open(self.done_file, 'a') as done_file_obj:
+            urls_processed = 0
             for url in self.urls:
                 manga_name = url.split('/')[-1]
                 manga_folder = os.sep.join([self.root_manga_dir, manga_name])
@@ -190,6 +195,9 @@ class FDownloader():
                     self.browser.save_screenshot(os.sep.join([manga_folder, f'{page_num}.png']))
                 print('>> manga done!')
                 done_file_obj.write(f'{url}\n')
+                urls_processed += 1
+                if self.max is not None and urls_processed >= self.max:
+                    break
 
     def load_urls_from_collection(self, collection_url):
         """
