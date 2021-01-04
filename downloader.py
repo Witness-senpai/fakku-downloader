@@ -107,8 +107,12 @@ class FDownloader():
             If True: launch browser in headless mode(for download manga)
             If False: launch usualy browser with GUI(for first authenticate)
         """
-        options = Options()
-        options.headless = headless
+        options = webdriver.ChromeOptions()
+        if headless:
+            options.add_argument('headless')
+        user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/601.3.9 (KHTML, like Gecko) Version/9.0.2 Safari/601.3.9'
+        options.add_argument(f'user-agent={user_agent}')
+
         self.browser = webdriver.Chrome(
             executable_path=self.driver_path,
             chrome_options=options
