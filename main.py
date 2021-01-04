@@ -6,6 +6,7 @@ from downloader import (FDownloader,
                         URLS_FILE,
                         DONE_FILE,
                         COOKIES_FILE,
+                        ROOT_MANGA_DIR,
                     )
 
 
@@ -31,8 +32,15 @@ def main():
         "--cookies_file",
         type=str,
         default=COOKIES_FILE,
-        help=f"Bynary file that contains saved cookies for authentication. \
+        help=f"Binary file that contains saved cookies for authentication. \
             By default -- {COOKIES_FILE}")
+    argparser.add_argument(
+        "-o",
+        "--output_dir",
+        type=str,
+        default=ROOT_MANGA_DIR,
+        help=f"The directory that will be used as the root of the output \
+            By default -- {ROOT_MANGA_DIR}")
     argparser.add_argument(
         "-l",
         "--login",
@@ -74,6 +82,7 @@ def main():
         urls_file=args.file_urls,
         done_file=args.done_file,
         cookies_file=args.cookies_file,
+        root_manga_dir=args.output_dir,
         login=args.login,
         password=args.password,
         timeout=args.timeout,

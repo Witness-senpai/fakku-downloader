@@ -50,6 +50,7 @@ class FDownloader():
             urls_file=URLS_FILE,
             done_file=DONE_FILE,
             cookies_file=COOKIES_FILE,
+            root_manga_dir=ROOT_MANGA_DIR,
             driver_path=EXEC_PATH,
             default_display=MAX_DISPLAY_SETTINGS,
             timeout=TIMEOUT,
@@ -82,6 +83,7 @@ class FDownloader():
         self.urls = self.__get_urls_list(urls_file, done_file)
         self.done_file = done_file
         self.cookies_file = cookies_file
+        self.root_manga_dir = root_manga_dir
         self.driver_path = driver_path
         self.browser = None
         self.default_display = default_display
@@ -154,12 +156,12 @@ class FDownloader():
         Just main function witch opening each page and save it in .png
         """
         self.browser.set_window_size(*self.default_display)
-        if not os.path.exists(ROOT_MANGA_DIR):
-            os.mkdir(ROOT_MANGA_DIR)
+        if not os.path.exists(self.root_manga_dir):
+            os.mkdir(self.root_manga_dir)
         with open(self.done_file, 'a') as done_file_obj:
             for url in self.urls:
                 manga_name = url.split('/')[-1]
-                manga_folder = os.sep.join([ROOT_MANGA_DIR, manga_name])
+                manga_folder = os.sep.join([self.root_manga_dir, manga_name])
                 if not os.path.exists(manga_folder):
                    os.mkdir(manga_folder)
                 self.browser.get(url)
