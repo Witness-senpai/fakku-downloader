@@ -102,6 +102,7 @@ class FDownloader():
     def init_browser(self, headless=False):
         """
         Initializing browser and authenticate if necessary
+        Lots of obfuscation via: https://intoli.com/blog/making-chrome-headless-undetectable/
         ---------------------
         param: headless -- bool
             If True: launch browser in headless mode(for download manga)
@@ -117,6 +118,42 @@ class FDownloader():
             executable_path=self.driver_path,
             chrome_options=options
         )
+
+        #Note: not sure if this is actually working, or needs to be called later. Tough to verify.
+        customJs = """
+        // overwrite the `languages` property to use a custom getter
+        Object.defineProperty(navigator, 'languages', {
+          get: function() {
+            return ['en-US', 'en'];
+          },
+        });
+
+        // overwrite the `plugins` property to use a custom getter
+        Object.defineProperty(navigator, 'plugins', {
+          get: function() {
+            // this just needs to have `length > 0`, but we could mock the plugins too
+            return [1, 2, 3, 4, 5];
+          },
+        });
+
+        // Spoof renderer checks
+        const getParameter = WebGLRenderingContext.getParameter;
+        WebGLRenderingContext.prototype.getParameter = function(parameter) {
+          // UNMASKED_VENDOR_WEBGL
+          if (parameter === 37445) {
+            return 'Intel Open Source Technology Center';
+          }
+          // UNMASKED_RENDERER_WEBGL
+          if (parameter === 37446) {
+            return 'Mesa DRI Intel(R) Ivybridge Mobile ';
+          }
+
+          return getParameter(parameter);
+        };
+        """
+
+        self.browser.execute_script(customJs)
+
         if not headless:
             self.__auth()
         self.__set_cookies()
