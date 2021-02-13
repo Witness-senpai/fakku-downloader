@@ -21,9 +21,10 @@ In my opinion, the simplest and fastest solution for downloading manga from fakk
 5) Open root folder in command line and run the command <code>python main.py</code>
 
 ## Some features
-* Use key -t for set timeout between loading the pages. If quality of .png is bad, or program somewhere crush its can help.
-* Use keys -l and -p for write the login and password in command
-* More technical information you can find in comments to code
+* Use option -w for set wait time between loading the pages. If quality of .png is bad, or program somewhere crush its can help.
+* Use option -t for set timeout for loading first page.
+* Use option -l and -p for write the login and password from fakku.net
+* More option technical you can find via --help
 
 ---
 
@@ -45,7 +46,7 @@ In my opinion, the simplest and fastest solution for downloading manga from fakk
 <p align="center">
 	<img src="https://github.com/Witness-senpai/fakku-downloader/blob/master/readme_png/4.PNG" width="800">
 </p>
-5. Downloading process in progress
+5. Downloading process
 <p align="center">
 	<img src="https://github.com/Witness-senpai/fakku-downloader/blob/master/readme_png/5.PNG" width="800">
 </p>
