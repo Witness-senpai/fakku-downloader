@@ -93,6 +93,10 @@ def main():
             url_file = URLS_FILE
         Path(url_file).touch()
 
+    # Create empty done.text if it not exists
+    if not Path(args.done_file).is_file():
+        Path(args.done_file).touch()
+
     try:
         with open(args.file_urls, 'r') as f:
             pass
