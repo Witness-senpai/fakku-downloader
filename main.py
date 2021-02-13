@@ -1,15 +1,18 @@
 import argparse
-from downloader import (FDownloader,
-                        program_exit,
-                        TIMEOUT,
-                        WAIT,
-                        URLS_FILE,
-                        DONE_FILE,
-                        COOKIES_FILE,
-                        ROOT_MANGA_DIR,
-                        MAX,
-                    )
 from pathlib import Path
+
+from downloader import (
+    FDownloader,
+    program_exit,
+    TIMEOUT,
+    WAIT,
+    URLS_FILE,
+    DONE_FILE,
+    COOKIES_FILE,
+    ROOT_MANGA_DIR,
+    MAX,
+)
+
 
 def main():
     argparser = argparse.ArgumentParser()
@@ -27,7 +30,7 @@ def main():
         "--file_urls",
         type=str,
         default=URLS_FILE,
-        help=f".txt file that contains list of urls for download if \
+        help=f".txt file that contains list of urls for download \
             By default -- {URLS_FILE}")
     argparser.add_argument(
         "-d",
@@ -68,7 +71,7 @@ def main():
         "--timeout",
         type=float,
         default=TIMEOUT,
-        help=f"Timeout in seconds for how long to wait to take screenshot \
+        help=f"Timeout in seconds for loading first manga page. \
             Increase this argument if quality of pages is bad. By default -- {TIMEOUT} sec")
     argparser.add_argument(
         "-w",
@@ -106,6 +109,7 @@ def main():
             Create it and write the list of manga urls first.\n \
             Or run this again with the -z parameter with a collection_url to download urls first.')
         program_exit()
+
     loader = FDownloader(
         urls_file=args.file_urls,
         done_file=args.done_file,
