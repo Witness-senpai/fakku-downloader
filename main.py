@@ -17,15 +17,6 @@ from downloader import (
 def main():
     argparser = argparse.ArgumentParser()
     argparser.add_argument(
-        "-z",
-        "--collection_url",
-        type=str,
-        default=None,
-        help=f"Give a collection URL that will be parsed and loaded into urls.txt \
-            The normal operations of downloading manga images will not happen while this \
-            parameter is set. \
-            By default -- None, process the urls.txt instead")
-    argparser.add_argument(
         "-f",
         "--file_urls",
         type=str,
@@ -89,26 +80,15 @@ def main():
             Set this argument if you become blocked. By default -- No limit")
     args = argparser.parse_args()
 
-    # This is to create a new file for collection_urls to be downloaded
-    if args.collection_url:
-        url_file = args.file_urls
-        if not args.file_urls:
-            url_file = URLS_FILE
-        Path(url_file).touch()
+    file_urls = Path(args.file_urls)
+    if not file_urls.is_file() or file_urls.stat().st_size == 0:
+        print(f'File {args.file_urls} does not exist or empty.\n' + \
+            'Create it and write the list of manga urls first.')
+        program_exit()
 
     # Create empty done.text if it not exists
     if not Path(args.done_file).is_file():
         Path(args.done_file).touch()
-
-    try:
-        with open(args.file_urls, 'r') as f:
-            pass
-    except FileNotFoundError:
-
-        print(f'File {args.file_urls} does not exist in folder.\n \
-            Create it and write the list of manga urls first.\n \
-            Or run this again with the -z parameter with a collection_url to download urls first.')
-        program_exit()
 
     loader = FDownloader(
         urls_file=args.file_urls,
@@ -122,21 +102,15 @@ def main():
         _max=args.max,
     )
 
-    try:
-        with open(args.cookies_file, 'rb') as f:
-            pass
-    except FileNotFoundError:
-        print('\nCookies file are not detected. Please, authenticate login ' + \
-            'in next step and generate cookie for next runs.')
+    if not Path(args.cookies_file).is_file():
+        print(f'Cookies file({args.cookies_file}) are not detected. Please, ' + \
+            'login in next step for generate cookie for next runs.')
         loader.init_browser(headless=False)
     else:
-        print(f'\nUsing cookies file: {args.cookies_file}')
+        print(f'Using cookies file: {args.cookies_file}')
         loader.init_browser(headless=True)
 
-    if args.collection_url:
-        loader.load_urls_from_collection(args.collection_url)
-    else:
-        loader.load_all()
+    loader.load_all()
 
 if __name__ == '__main__':
     main()
