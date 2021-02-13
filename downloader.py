@@ -36,7 +36,8 @@ TIMEOUT = 5
 WAIT = 2
 # Max manga to download in one session (-1 == no limit)
 MAX = None
-
+# User agent for web browser
+USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/601.3.9 (KHTML, like Gecko) Version/9.0.2 Safari/601.3.9'
 
 def program_exit():
     print('Program exit.')
@@ -75,7 +76,7 @@ class FDownloader():
         param: default_display -- list of two int (width, height)
             Initial display settings. After loading the page, they will be changed
         param: timeout -- float
-            Timeout upon waiting for page to load
+            Timeout upon waiting for first page to load
             If <5 may be poor quality.
         param: wait -- float
             Wait in seconds beetween pages downloading.
@@ -106,20 +107,19 @@ class FDownloader():
         ---------------------
         param: headless -- bool
             If True: launch browser in headless mode(for download manga)
-            If False: launch usualy browser with GUI(for first authenticate)
+            If False: launch usually browser with GUI(for first authenticate)
         """
         options = webdriver.ChromeOptions()
         if headless:
             options.add_argument('headless')
-        user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/601.3.9 (KHTML, like Gecko) Version/9.0.2 Safari/601.3.9'
-        options.add_argument(f'user-agent={user_agent}')
+        options.add_argument(f'user-agent={USER_AGENT}')
 
         self.browser = webdriver.Chrome(
             executable_path=self.driver_path,
-            chrome_options=options
+            chrome_options=options,
         )
 
-        #Note: not sure if this is actually working, or needs to be called later. Tough to verify.
+        # Note: not sure if this is actually working, or needs to be called later. Tough to verify.
         customJs = """
         // overwrite the `languages` property to use a custom getter
         Object.defineProperty(navigator, 'languages', {
@@ -161,14 +161,12 @@ class FDownloader():
 
     def __set_cookies(self):
         self.browser.get(LOGIN_URL)
-        #self.browser.delete_all_cookies()
         with open(self.cookies_file, 'rb') as f:
             cookies = pickle.load(f)
             for cookie in cookies:
                 if 'expiry' in cookie:
                     cookie['expiry'] = int(cookie['expiry'])
                     self.browser.add_cookie(cookie)
-        # self.browser.get(LOGIN_URL)
 
     def __init_headless_browser(self):
         """
@@ -206,6 +204,7 @@ class FDownloader():
         self.browser.set_window_size(*self.default_display)
         if not os.path.exists(self.root_manga_dir):
             os.mkdir(self.root_manga_dir)
+
         with open(self.done_file, 'a') as done_file_obj:
             urls_processed = 0
             for url in self.urls:
@@ -213,16 +212,19 @@ class FDownloader():
                 manga_folder = os.sep.join([self.root_manga_dir, manga_name])
                 if not os.path.exists(manga_folder):
                    os.mkdir(manga_folder)
+
                 self.browser.get(url)
                 self.waiting_loading_page(is_reader_page=False)
                 page_count = self.__get_page_count(self.browser.page_source)
                 print(f'Downloading "{manga_name}" manga.')
                 delay_before_fetching = True # When fetching the first page, multiple pages load and the reader slows down
+
                 for page_num in tqdm(range(1, page_count + 1)):
                     destination_file = os.sep.join([manga_folder, f'{page_num}.png'])
                     if os.path.isfile(destination_file):
                         delay_before_fetching = True #When skipping files, the reader will load multiple pages and slow down again
                         continue
+
                     self.browser.get(f'{url}/read/page/{page_num}')
                     self.waiting_loading_page(is_reader_page=True, should_add_delay=delay_before_fetching)
                     delay_before_fetching = False
@@ -237,7 +239,7 @@ class FDownloader():
                     except JavascriptException:
                         print('\nSome error with JS. Page source are note ready. You can try increase argument -t')
 
-                    # Delete all UI
+                    # Delete all UI and save page
                     self.browser.execute_script(f"document.getElementsByClassName('layer')[{n-1}].remove()")
                     self.browser.save_screenshot(destination_file)
                 print('>> manga done!')
@@ -281,7 +283,7 @@ class FDownloader():
         if not page_count:
             try:
                 pagination_text = soup.find('div', attrs={'class': 'pagination-meta'}).text
-                page_count = int(re.search("Page\s+\d+\s+of\s+(\d+)", pagination_text).group(1))
+                page_count = int(re.search(r"Page\s+\d+\s+of\s+(\d+)", pagination_text).group(1))
             except Exception as ex:
                 print(ex)
         return page_count
