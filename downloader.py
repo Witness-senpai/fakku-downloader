@@ -248,6 +248,22 @@ class FDownloader():
                 if self.max is not None and urls_processed >= self.max:
                     break
 
+    def load_urls_from_collection(self, collection_url):
+        """
+        Function which records the manga URLs inside a collection
+        """
+        self.browser.get(collection_url)
+        self.waiting_loading_page(is_reader_page=False)
+        page_count = self.__get_page_count_in_collection(self.browser.page_source)
+        with open(self.urls_file, 'a') as f:
+            for page_num in tqdm(range(1, page_count + 1)):
+                if page_num != 1: #Fencepost problem, the first page of a collection is already loaded
+                    self.browser.get(f'{collection_url}/page/{page_num}')
+                    self.waiting_loading_page(is_reader_page=False)
+                soup = bs(self.browser.page_source, 'html.parser')
+                for div in soup.find_all('div', attrs={'class': 'book-title'}):
+                    f.write(f"{BASE_URL}{div.find('a')['href']}\n")
+
     def __get_page_count(self, page_source):
         """
         Get count of manga pages from html code
