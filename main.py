@@ -115,7 +115,7 @@ def main():
         password=args.password,
         timeout=args.timeout,
         wait=args.wait,
-        max=args.max,
+        _max=args.max,
     )
 
     try:

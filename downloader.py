@@ -1,7 +1,6 @@
 import os
 import pickle
 import re
-
 from shutil import rmtree
 from time import sleep
 
@@ -14,6 +13,7 @@ from selenium.common.exceptions import TimeoutException, JavascriptException
 
 from bs4 import BeautifulSoup as bs
 from tqdm import tqdm
+
 
 BASE_URL = 'https://www.fakku.net'
 LOGIN_URL = f'{BASE_URL}/login/'
@@ -61,7 +61,7 @@ class FDownloader():
             wait=WAIT,
             login=None,
             password=None,
-            max=MAX,
+            _max=MAX,
         ):
         """
         param: urls_file -- string name of .txt file with urls
@@ -97,7 +97,7 @@ class FDownloader():
         self.wait = wait
         self.login = login
         self.password = password
-        self.max = max
+        self.max = _max
 
     def init_browser(self, headless=False):
         """
