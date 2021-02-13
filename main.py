@@ -17,6 +17,15 @@ from downloader import (
 def main():
     argparser = argparse.ArgumentParser()
     argparser.add_argument(
+        "-z",
+        "--collection_url",
+        type=str,
+        default=None,
+        help=f"Give a collection URL that will be parsed and loaded into urls.txt \
+            The normal operations of downloading manga images will not happen while this \
+            parameter is set. \
+            By default -- None, process the urls.txt instead")
+    argparser.add_argument(
         "-f",
         "--file_urls",
         type=str,
@@ -81,9 +90,12 @@ def main():
     args = argparser.parse_args()
 
     file_urls = Path(args.file_urls)
-    if not file_urls.is_file() or file_urls.stat().st_size == 0:
+    if args.collection_url:
+        Path(args.file_urls).touch()
+    elif not file_urls.is_file() or file_urls.stat().st_size == 0:
         print(f'File {args.file_urls} does not exist or empty.\n' + \
-            'Create it and write the list of manga urls first.')
+            'Create it and write the list of manga urls first.\n' + \
+            'Or run this again with the -z parameter with a collection_url to download urls first.')
         program_exit()
 
     # Create empty done.text if it not exists
@@ -110,7 +122,10 @@ def main():
         print(f'Using cookies file: {args.cookies_file}')
         loader.init_browser(headless=True)
 
-    loader.load_all()
+    if args.collection_url:
+        loader.load_urls_from_collection(args.collection_url)
+    else:
+        loader.load_all()
 
 if __name__ == '__main__':
     main()
