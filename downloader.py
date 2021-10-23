@@ -3,6 +3,7 @@ import pickle
 import re
 from shutil import rmtree
 from time import sleep
+from typing import Optional, List
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -15,21 +16,21 @@ from bs4 import BeautifulSoup as bs
 from tqdm import tqdm
 
 
-BASE_URL = 'https://www.fakku.net'
-LOGIN_URL = f'{BASE_URL}/login/'
+BASE_URL = "https://www.fakku.net"
+LOGIN_URL = f"{BASE_URL}/login/"
 # Initial display settings for headless browser. Any manga in this
 # resolution will be opened correctly and with the best quality.
 MAX_DISPLAY_SETTINGS = [1440, 2560]
 # Path to headless driver
-EXEC_PATH = 'chromedriver.exe'
+EXEC_PATH = "chromedriver.exe"
 # File with manga urls
-URLS_FILE = 'urls.txt'
+URLS_FILE = "urls.txt"
 # File with completed urls
-DONE_FILE = 'done.txt'
+DONE_FILE = "done.txt"
 # File with prepared cookies
-COOKIES_FILE = 'cookies.pickle'
+COOKIES_FILE = "cookies.pickle"
 # Root directory for manga downloader
-ROOT_MANGA_DIR = 'manga'
+ROOT_MANGA_DIR = "manga"
 # Timeout to page loading in seconds
 TIMEOUT = 5
 # Wait between page loading in seconds
@@ -37,33 +38,36 @@ WAIT = 2
 # Max manga to download in one session (-1 == no limit)
 MAX = None
 # User agent for web browser
-USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/601.3.9 (KHTML, like Gecko) Version/9.0.2 Safari/601.3.9'
+USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/27.0.1453.93 Safari/537.36"
+
 
 def program_exit():
-    print('Program exit.')
+    print("Program exit.")
     exit()
 
 
-class FDownloader():
+class FDownloader:
     """
     Class which allows download manga.
     The main idea of download - using headless browser and just saving
     screenshot from that. Because canvas in fakku.net is protected
     from download via simple .toDataURL js function etc.
     """
-    def __init__(self,
-            urls_file=URLS_FILE,
-            done_file=DONE_FILE,
-            cookies_file=COOKIES_FILE,
-            root_manga_dir=ROOT_MANGA_DIR,
-            driver_path=EXEC_PATH,
-            default_display=MAX_DISPLAY_SETTINGS,
-            timeout=TIMEOUT,
-            wait=WAIT,
-            login=None,
-            password=None,
-            _max=MAX,
-        ):
+
+    def __init__(
+        self,
+        urls_file: str = URLS_FILE,
+        done_file: str = DONE_FILE,
+        cookies_file: str = COOKIES_FILE,
+        root_manga_dir: str = ROOT_MANGA_DIR,
+        driver_path:str = EXEC_PATH,
+        default_display: List[int] = MAX_DISPLAY_SETTINGS,
+        timeout: float = TIMEOUT,
+        wait: float = WAIT,
+        login: Optional[str] = None,
+        password: Optional[str] = None,
+        _max: Optional[int] = MAX,
+    ):
         """
         param: urls_file -- string name of .txt file with urls
             Contains list of manga urls, that's to be downloaded
@@ -100,7 +104,7 @@ class FDownloader():
         self.password = password
         self.max = _max
 
-    def init_browser(self, headless=False):
+    def init_browser(self, headless: Optional[bool] = False) -> None:
         """
         Initializing browser and authenticate if necessary
         Lots of obfuscation via: https://intoli.com/blog/making-chrome-headless-undetectable/
@@ -111,8 +115,8 @@ class FDownloader():
         """
         options = webdriver.ChromeOptions()
         if headless:
-            options.add_argument('headless')
-        options.add_argument(f'user-agent={USER_AGENT}')
+            options.add_argument("headless")
+        options.add_argument(f"user-agent={USER_AGENT}")
 
         self.browser = webdriver.Chrome(
             executable_path=self.driver_path,
@@ -159,45 +163,44 @@ class FDownloader():
         self.__set_cookies()
         self.browser.set_window_size(*self.default_display)
 
-    def __set_cookies(self):
+    def __set_cookies(self) -> None:
         self.browser.get(LOGIN_URL)
-        with open(self.cookies_file, 'rb') as f:
+        with open(self.cookies_file, "rb") as f:
             cookies = pickle.load(f)
             for cookie in cookies:
-                if 'expiry' in cookie:
-                    cookie['expiry'] = int(cookie['expiry'])
+                if "expiry" in cookie:
+                    cookie["expiry"] = int(cookie["expiry"])
                     self.browser.add_cookie(cookie)
 
-    def __init_headless_browser(self):
+    def __init_headless_browser(self) -> None:
         """
         Recreating browser in headless mode(without GUI)
         """
         options = Options()
         options.headless = True
         self.browser = webdriver.Chrome(
-            executable_path=self.driver_path,
-            chrome_options=options)
+            executable_path=self.driver_path, chrome_options=options
+        )
 
-    def __auth(self):
+    def __auth(self) -> None:
         """
         Authentication in browser with GUI for saving cookies in first time
         """
         self.browser.get(LOGIN_URL)
-        if not self.login is None:
-            self.browser.find_element_by_id('username').send_keys(self.login)
-        if not self.password is None:
-            self.browser.find_element_by_id('password').send_keys(self.password)
-        self.browser.find_element_by_class_name('js-submit').click()
+        if not (self.login is None and self.password is None):
+            self.browser.find_element_by_id("username").send_keys(self.login)
+            self.browser.find_element_by_id("6ccb8078a7").send_keys(self.password)
+            self.browser.find_element_by_class_name("js-submit-login").click()
 
         ready = input("Tab Enter to continue after you login...")
-        with open(self.cookies_file, 'wb') as f:
+        with open(self.cookies_file, "wb") as f:
             pickle.dump(self.browser.get_cookies(), f)
 
         self.browser.close()
         # Recreating browser in headless mode for next manga downloading
         self.__init_headless_browser()
 
-    def load_all(self):
+    def load_all(self) -> None:
         """
         Just main function which opening each page and save it in .png
         """
@@ -205,66 +208,79 @@ class FDownloader():
         if not os.path.exists(self.root_manga_dir):
             os.mkdir(self.root_manga_dir)
 
-        with open(self.done_file, 'a') as done_file_obj:
+        with open(self.done_file, "a") as done_file_obj:
             urls_processed = 0
             for url in self.urls:
-                manga_name = url.split('/')[-1]
+                manga_name = url.split("/")[-1]
                 manga_folder = os.sep.join([self.root_manga_dir, manga_name])
                 if not os.path.exists(manga_folder):
-                   os.mkdir(manga_folder)
+                    os.mkdir(manga_folder)
 
                 self.browser.get(url)
                 self.waiting_loading_page(is_reader_page=False)
                 page_count = self.__get_page_count(self.browser.page_source)
                 print(f'Downloading "{manga_name}" manga.')
-                delay_before_fetching = True # When fetching the first page, multiple pages load and the reader slows down
+                delay_before_fetching = True  # When fetching the first page, multiple pages load and the reader slows down
 
                 for page_num in tqdm(range(1, page_count + 1)):
-                    destination_file = os.sep.join([manga_folder, f'{page_num}.png'])
+                    destination_file = os.sep.join([manga_folder, f"{page_num}.png"])
                     if os.path.isfile(destination_file):
-                        delay_before_fetching = True #When skipping files, the reader will load multiple pages and slow down again
+                        delay_before_fetching = True  # When skipping files, the reader will load multiple pages and slow down again
                         continue
 
-                    self.browser.get(f'{url}/read/page/{page_num}')
-                    self.waiting_loading_page(is_reader_page=True, should_add_delay=delay_before_fetching)
+                    self.browser.get(f"{url}/read/page/{page_num}")
+                    self.waiting_loading_page(
+                        is_reader_page=True, should_add_delay=delay_before_fetching
+                    )
                     delay_before_fetching = False
 
                     # Count of leyers may be 2 or 3 therefore we get different target layer
-                    n = self.browser.execute_script("return document.getElementsByClassName('layer').length")
+                    n = self.browser.execute_script(
+                        "return document.getElementsByClassName('layer').length"
+                    )
                     try:
                         # Resizing window size for exactly manga page size
-                        width = self.browser.execute_script(f"return document.getElementsByTagName('canvas')[{n-2}].width")
-                        height = self.browser.execute_script(f"return document.getElementsByTagName('canvas')[{n-2}].height")
+                        width = self.browser.execute_script(
+                            f"return document.getElementsByTagName('canvas')[{n-2}].width"
+                        )
+                        height = self.browser.execute_script(
+                            f"return document.getElementsByTagName('canvas')[{n-2}].height"
+                        )
                         self.browser.set_window_size(width, height)
                     except JavascriptException:
-                        print('\nSome error with JS. Page source are note ready. You can try increase argument -t')
+                        print(
+                            "\nSome error with JS. Page source are note ready. You can try increase argument -t"
+                        )
 
                     # Delete all UI and save page
-                    self.browser.execute_script(f"document.getElementsByClassName('layer')[{n-1}].remove()")
+                    self.browser.execute_script(
+                        f"document.getElementsByClassName('layer')[{n-1}].remove()"
+                    )
                     self.browser.save_screenshot(destination_file)
-                print('>> manga done!')
-                done_file_obj.write(f'{url}\n')
+                print(">> manga done!")
+                done_file_obj.write(f"{url}\n")
                 urls_processed += 1
                 if self.max is not None and urls_processed >= self.max:
                     break
 
-    def load_urls_from_collection(self, collection_url):
+    def load_urls_from_collection(self, collection_url: str) -> None:
         """
         Function which records the manga URLs inside a collection
         """
         self.browser.get(collection_url)
         self.waiting_loading_page(is_reader_page=False)
         page_count = self.__get_page_count_in_collection(self.browser.page_source)
-        with open(self.urls_file, 'a') as f:
+        with open(self.urls_file, "a") as f:
             for page_num in tqdm(range(1, page_count + 1)):
-                if page_num != 1: #Fencepost problem, the first page of a collection is already loaded
-                    self.browser.get(f'{collection_url}/page/{page_num}')
+                # Fencepost problem, the first page of a collection is already loaded
+                if page_num != 1:  
+                    self.browser.get(f"{collection_url}/page/{page_num}")
                     self.waiting_loading_page(is_reader_page=False)
-                soup = bs(self.browser.page_source, 'html.parser')
-                for div in soup.find_all('div', attrs={'class': 'book-title'}):
+                soup = bs(self.browser.page_source, "html.parser")
+                for div in soup.find_all("div", attrs={"class": "book-title"}):
                     f.write(f"{BASE_URL}{div.find('a')['href']}\n")
 
-    def __get_page_count(self, page_source):
+    def __get_page_count(self, page_source: str) -> int:
         """
         Get count of manga pages from html code
         ----------------------------
@@ -273,19 +289,23 @@ class FDownloader():
         return: int
             Number of manga pages
         """
-        soup = bs(page_source, 'html.parser')
-        page_count = None
-        if not page_count:
+        print(type(page_source))
+        soup = bs(page_source, "html.parser")
+        values = soup.find_all('div', class_="table-cell w-full align-top text-left space-y-2 link:text-blue-700 dark:link:text-white")
+        pages_info = None
+        for val in values:
             try:
-                divs = soup.find_all('div', attrs={'class': 'row'})
-                page_count = int(next(x for x in divs if x(text="Pages"))
-                    .find('div', attrs={'class': 'row-right'}).text
-                    .split(' ')[0])
-            except Exception as ex:
-                print(ex)
-        return page_count
+                pages_info = val.string.split(' ')
+                if pages_info[1] == "pages":
+                    break
+            except (AttributeError, IndexError):
+                continue
+        if not pages_info:
+            raise ValueError("Page count are not found.")
 
-    def __get_page_count_in_collection(self, page_source):
+        return int(pages_info[0])
+
+    def __get_page_count_in_collection(self, page_source: str) -> int:
         """
         Get count of collection pages from html code
         ----------------------------
@@ -294,17 +314,21 @@ class FDownloader():
         return: int
             Number of collection pages
         """
-        soup = bs(page_source, 'html.parser')
+        soup = bs(page_source, "html.parser")
         page_count = None
         if not page_count:
             try:
-                pagination_text = soup.find('div', attrs={'class': 'pagination-meta'}).text
-                page_count = int(re.search(r"Page\s+\d+\s+of\s+(\d+)", pagination_text).group(1))
+                pagination_text = soup.find(
+                    "div", attrs={"class": "pagination-meta"}
+                ).text
+                page_count = int(
+                    re.search(r"Page\s+\d+\s+of\s+(\d+)", pagination_text).group(1)
+                )
             except Exception as ex:
                 print(ex)
         return page_count
 
-    def __get_urls_list(self, urls_file, done_file):
+    def __get_urls_list(self, urls_file: str, done_file: str) -> List[str]:
         """
         Get list of urls from .txt file
         --------------------------
@@ -316,19 +340,23 @@ class FDownloader():
             List of urls from urls_file
         """
         done = []
-        with open(done_file, 'r') as donef:
+        with open(done_file, "r") as donef:
             for line in donef:
-                done.append(line.replace('\n',''))
+                done.append(line.replace("\n", ""))
 
         urls = []
-        with open(urls_file, 'r') as f:
+        with open(urls_file, "r") as f:
             for line in f:
-                clean_line = line.replace('\n','')
+                clean_line = line.replace("\n", "")
                 if clean_line not in done:
                     urls.append(clean_line)
         return urls
 
-    def waiting_loading_page(self, is_reader_page=False, should_add_delay=False):
+    def waiting_loading_page(
+        self,
+        is_reader_page: bool = False,
+        should_add_delay: bool = False,
+    ) -> None:
         """
         Awaiting while page will load
         ---------------------------
@@ -352,6 +380,8 @@ class FDownloader():
             element = EC.presence_of_element_located((By.XPATH, elem_xpath))
             WebDriverWait(self.browser, self.timeout).until(element)
         except TimeoutException:
-            print('\nError: timed out waiting for page to load. + \
-                You can try increase param -t for more delaying.')
+            print(
+                "\nError: timed out waiting for page to load. + \
+                You can try increase param -t for more delaying."
+            )
             program_exit()
