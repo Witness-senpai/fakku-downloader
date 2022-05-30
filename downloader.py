@@ -321,10 +321,16 @@ class FDownloader:
         soup = bs(page_source, "html.parser")
         page_count = 1
         try:
-            last_page=soup.find("a", {'title': "Last Page"} )['href']
-            page_count = int(
-                re.search(r"\/page\/(\d+)", last_page).group(1)
-            )
+            # Search for page links
+            page_links=soup.find_all('a', {'href': re.compile(r"/page/(\d+)")})
+ 
+            # If there are multiple pages...
+            if len(page_links) > 0:
+                # Find the maximum page number listed in link URLs
+                page_count=max([
+                        int(re.search(r"\/page\/(\d+)", pg['href']).group(1))
+                        for pg in page_links
+                    ])
         except Exception as ex:
             print(ex)
         return page_count
