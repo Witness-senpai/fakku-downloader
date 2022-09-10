@@ -307,7 +307,11 @@ class FDownloader:
         if not pages_info:
             raise ValueError("Page count are not found.")
 
-        return int(pages_info[0])
+        # Work-around for 1-page posts
+        try:
+            return int(pages_info[0])
+        except:
+            return 1
 
     def __get_page_count_in_collection(self, page_source: str) -> int:
         """
