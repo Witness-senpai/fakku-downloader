@@ -211,6 +211,10 @@ class FDownloader:
         with open(self.done_file, "a") as done_file_obj:
             urls_processed = 0
             for url in self.urls:
+                # If `url` is an empty string, skip it.
+                if not url.strip():
+                    continue
+
                 manga_name = url.split("/")[-1]
                 manga_folder = os.sep.join([self.root_manga_dir, manga_name])
                 if not os.path.exists(manga_folder):
@@ -273,11 +277,11 @@ class FDownloader:
         with open(self.urls_file, "a") as f:
             for page_num in tqdm(range(1, page_count + 1)):
                 # Fencepost problem, the first page of a collection is already loaded
-                if page_num != 1:  
+                if page_num != 1:
                     self.browser.get(f"{collection_url}/page/{page_num}")
                     self.waiting_loading_page(is_reader_page=False)
                 soup = bs(self.browser.page_source, "html.parser")
-                for div in soup.find_all("div", attrs={"class": "book-title"}):
+                for div in soup.find_all("div", attrs={"class": "col-comic"}):
                     f.write(f"{BASE_URL}{div.find('a')['href']}\n")
 
     def __get_page_count(self, page_source: str) -> int:
@@ -303,7 +307,11 @@ class FDownloader:
         if not pages_info:
             raise ValueError("Page count are not found.")
 
-        return int(pages_info[0])
+        # Work-around for 1-page posts
+        try:
+            return int(pages_info[0])
+        except:
+            return 1
 
     def __get_page_count_in_collection(self, page_source: str) -> int:
         """
@@ -315,17 +323,20 @@ class FDownloader:
             Number of collection pages
         """
         soup = bs(page_source, "html.parser")
-        page_count = None
-        if not page_count:
-            try:
-                pagination_text = soup.find(
-                    "div", attrs={"class": "pagination-meta"}
-                ).text
-                page_count = int(
-                    re.search(r"Page\s+\d+\s+of\s+(\d+)", pagination_text).group(1)
-                )
-            except Exception as ex:
-                print(ex)
+        page_count = 1
+        try:
+            # Search for page links
+            page_links=soup.find_all('a', {'href': re.compile(r"/page/(\d+)")})
+ 
+            # If there are multiple pages...
+            if len(page_links) > 0:
+                # Find the maximum page number listed in link URLs
+                page_count=max([
+                        int(re.search(r"\/page\/(\d+)", pg['href']).group(1))
+                        for pg in page_links
+                    ])
+        except Exception as ex:
+            print(ex)
         return page_count
 
     def __get_urls_list(self, urls_file: str, done_file: str) -> List[str]:
@@ -369,7 +380,7 @@ class FDownloader:
         """
         if not is_reader_page:
             sleep(self.wait)
-            elem_xpath = "//link[@type='image/x-icon']"
+            elem_xpath = "//link[@rel='icon']"
         elif should_add_delay:
             sleep(self.wait * 3)
             elem_xpath = "//div[@data-name='PageView']"
