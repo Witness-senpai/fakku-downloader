@@ -380,7 +380,7 @@ class FDownloader:
         """
         if not is_reader_page:
             sleep(self.wait)
-            elem_xpath = "//link[@type='image/x-icon']"
+            elem_xpath = "//link[@rel='icon']"
         elif should_add_delay:
             sleep(self.wait * 3)
             elem_xpath = "//div[@data-name='PageView']"
